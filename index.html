@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Museo de Arte en Realidad Virtual Premium</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; background-color: #000; }
+  </style>
+</head>
+<body>
+  <a-scene ui="enabled: true">
+    
+    <!-- GESTIÓN DE RECURSOS -->
+    <a-assets>
+      <!-- Texturas Arquitectónicas -->
+      <img id="floor-texture" src="https://cdn.aframe.io/a-painter/images/floor.jpg" crossorigin="anonymous">
+      <img id="water-texture" src="https://cdn.aframe.io/a-painter/images/sky.jpg" crossorigin="anonymous">
+      
+      <!-- Obras de Arte (Desde Wikimedia, máxima calidad pública) -->
+      <img id="monalisa" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/687px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg" crossorigin="anonymous">
+      <img id="starry" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg" crossorigin="anonymous">
+      <img id="wave" src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Great_Wave_off_Kanagawa.jpg/1200px-The_Great_Wave_off_Kanagawa.jpg" crossorigin="anonymous">
+      <img id="pearl" src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Meisje_met_de_parel.jpg/800px-Meisje_met_de_parel.jpg" crossorigin="anonymous">
+      <img id="persistence" src="https://upload.wikimedia.org/wikipedia/en/thumb/d/dd/The_Persistence_of_Memory.jpg/800px-The_Persistence_of_Memory.jpg" crossorigin="anonymous">
+    </a-assets>
+
+    <!-- CONFIGURACIÓN POSICIÓN INICIAL Y CÁMARA (Para gafas y PC) -->
+    <a-entity position="0 1.6 8">
+      <a-camera look-controls wasd-controls="acceleration: 60">
+        <a-cursor color="#fff"></a-cursor>
+      </a-camera>
+    </a-entity>
+    
+    <!-- Soporte para los mandos VR (Oculus Touch, Vive, etc) -->
+    <a-entity laser-controls="hand: left"></a-entity>
+    <a-entity laser-controls="hand: right"></a-entity>
+
+    <!-- ILUMINACIÓN DEL MUSEO -->
+    <a-light type="ambient" color="#303030" intensity="1.5"></a-light>
+    <!-- Luces de techo para visibilidad general suave -->
+    <a-light type="point" intensity="0.3" position="0 6 0" distance="25" color="#fff"></a-light>
+    <a-light type="point" intensity="0.2" position="-10 5 -10" distance="15" color="#d1d5db"></a-light>
+    <a-light type="point" intensity="0.2" position="10 5 10" distance="15" color="#d1d5db"></a-light>
+
+    <!-- ARQUITECTURA: SUELO, TECHO Y PAREDES -->
+    <!-- Suelo (Hecho con textura de madera/suelo oscuro) -->
+    <a-plane src="#floor-texture" rotation="-90 0 0" width="40" height="40" repeat="8 8" material="roughness: 0.8; metalness: 0.1"></a-plane>
+    <!-- Techo Oscuro Estilo Industrial -->
+    <a-plane rotation="90 0 0" position="0 8 0" width="40" height="40" color="#0f172a" material="roughness: 1"></a-plane>
+    
+    <!-- Paredes (Gris neutro elegante para no distraer) -->
+    <a-box position="0 4 -15" width="30" height="8" depth="0.5" color="#475569" material="roughness: 0.9"></a-box>
+    <a-box position="0 4 15" width="30" height="8" depth="0.5" color="#475569" material="roughness: 0.9"></a-box>
+    <a-box position="-15 4 0" width="0.5" height="8" depth="30" color="#64748b" material="roughness: 0.9"></a-box>
+    <a-box position="15 4 0" width="0.5" height="8" depth="30" color="#64748b" material="roughness: 0.9"></a-box>
+
+    <!-- Columnas esquineras para dar elegancia -->
+    <a-cylinder position="-14.5 4 -14.5" radius="0.5" height="8" color="#1e293b"></a-cylinder>
+    <a-cylinder position="14.5 4 -14.5" radius="0.5" height="8" color="#1e293b"></a-cylinder>
+    <a-cylinder position="-14.5 4 14.5" radius="0.5" height="8" color="#1e293b"></a-cylinder>
+    <a-cylinder position="14.5 4 14.5" radius="0.5" height="8" color="#1e293b"></a-cylinder>
+
+    <!-- CENTRO DEL SALÓN: LA FUENTE -->
+    <a-entity position="0 0 0">
+      <!-- Pedestal / Base principal de mármol -->
+      <a-cylinder position="0 0.3 0" radius="3.5" height="0.6" color="#94a3b8" material="roughness: 0.8"></a-cylinder>
+      <!-- Base interior del agua -->
+      <a-cylinder position="0 0.61 0" radius="3.2" height="0.02" color="#0ea5e9" material="opacity: 0.85"></a-cylinder>
+      <!-- Superficie de agua transparente con tenue movimiento -->
+      <a-plane position="0 0.62 0" rotation="-90 0 0" src="#water-texture" width="6.3" height="6.3" material="opacity: 0.5; transparent: true">
+          <a-circle radius="3.15"></a-circle>
+          <!-- Animación de rotación lenta para el agua -->
+          <a-animation attribute="rotation" to="-90 360 0" dur="20000" repeat="indefinite" easing="linear"></a-animation>
+      </a-plane>
+      
+      <!-- Pilar central escultórico -->
+      <a-cylinder position="0 1.2 0" radius="0.6" height="1.6" color="#cbd5e1" material="roughness: 0.5"></a-cylinder>
+      <!-- Plato medio de la fuente -->
+      <a-cylinder position="0 2 0" radius="1.8" height="0.2" color="#94a3b8"></a-cylinder>
+      <a-cylinder position="0 2.1 0" radius="1.6" height="0.05" color="#0ea5e9" material="opacity: 0.8"></a-cylinder>
+      <!-- Cúspide decorativa de salida del agua -->
+      <a-sphere position="0 2.3 0" radius="0.4" color="#e2e8f0"></a-sphere>
+
+      <!-- Focos de luz bajo la fuente dándole aura artística -->
+      <a-light type="spot" color="#38bdf8" intensity="2" position="0 0.65 1.5" rotation="60 0 0" angle="45" penumbra="0.5"></a-light>
+      <a-light type="spot" color="#38bdf8" intensity="2" position="0 0.65 -1.5" rotation="60 180 0" angle="45" penumbra="0.5"></a-light>
+    </a-entity>
+
+    <!-- ZONA DE DESCANSO: LOS BANCOS -->
+    <!-- Banco Izquierdo -->
+    <a-entity position="-6 0 0" rotation="0 90 0">
+      <a-box position="0 0.5 0" width="2.5" height="0.1" depth="0.6" color="#78350f" material="roughness: 0.7"></a-box>
+      <a-box position="-1 0.25 0" width="0.1" height="0.5" depth="0.5" color="#111827"></a-box>
+      <a-box position="1 0.25 0" width="0.1" height="0.5" depth="0.5" color="#111827"></a-box>
+    </a-entity>
+
+    <!-- Banco Derecho -->
+    <a-entity position="6 0 0" rotation="0 -90 0">
+      <a-box position="0 0.5 0" width="2.5" height="0.1" depth="0.6" color="#78350f" material="roughness: 0.7"></a-box>
+      <a-box position="-1 0.25 0" width="0.1" height="0.5" depth="0.5" color="#111827"></a-box>
+      <a-box position="1 0.25 0" width="0.1" height="0.5" depth="0.5" color="#111827"></a-box>
+    </a-entity>
+
+    <!-- Banco Trasero -->
+    <a-entity position="0 0 -6" rotation="0 0 0">
+      <a-box position="0 0.5 0" width="2.5" height="0.1" depth="0.6" color="#78350f" material="roughness: 0.7"></a-box>
+      <a-box position="-1 0.25 0" width="0.1" height="0.5" depth="0.5" color="#111827"></a-box>
+      <a-box position="1 0.25 0" width="0.1" height="0.5" depth="0.5" color="#111827"></a-box>
+    </a-entity>
+
+    <!-- GALERÍA DE OBRAS DE ARTE -->
+
+    <!-- CUADRO 1: La Gioconda (Frontal) -->
+    <a-entity position="0 2.8 -14.7">
+      <a-box width="2" height="2.8" depth="0.1" color="#451a03" material="roughness: 0.6"></a-box>
+      <a-plane position="0 0 0.051" width="1.8" height="2.6" src="#monalisa"></a-plane>
+      <a-light type="spot" position="0 2 2" rotation="-35 0 0" intensity="1.5" angle="35" penumbra="0.6" color="#fffbeb"></a-light>
+      
+      <!-- Cartel Descriptivo -->
+      <a-entity position="2 -0.5 0.05">
+        <a-plane width="1.4" height="0.8" color="#171717"></a-plane>
+        <a-text value="La Gioconda (Mona Lisa)\n\nLeonardo da Vinci, 1503\nOleo sobre tabla de alamo." 
+                align="left" position="-0.6 0 0.02" width="1.8" color="#fbbf24"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- CUADRO 2: La Noche Estrellada (Izquierdo) -->
+    <a-entity position="-14.7 2.8 0" rotation="0 90 0">
+      <a-box width="4.4" height="3.2" depth="0.1" color="#020617"></a-box>
+      <a-plane position="0 0 0.051" width="4.2" height="3" src="#starry"></a-plane>
+      <a-light type="spot" position="0 2 2" rotation="-35 0 0" intensity="1.4" angle="45" penumbra="0.6" color="#eff6ff"></a-light>
+      
+      <!-- Cartel Descriptivo -->
+      <a-entity position="3.2 -0.5 0.05">
+        <a-plane width="1.5" height="1" color="#171717"></a-plane>
+        <a-text value="La Noche Estrellada\n\nVincent van Gogh, 1889\nOleo sobre lienzo.\nObra maestra postimpresionista." 
+                align="left" position="-0.65 0 0.02" width="2" color="#fbbf24"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- CUADRO 3: La Gran Ola de Kanagawa (Derecho) -->
+    <a-entity position="14.7 2.8 0" rotation="0 -90 0">
+      <a-box width="3.6" height="2.6" depth="0.1" color="#ca8a04"></a-box>
+      <a-plane position="0 0 0.051" width="3.4" height="2.4" src="#wave"></a-plane>
+      <a-light type="spot" position="0 2 2" rotation="-35 0 0" intensity="1.4" angle="40" penumbra="0.6" color="#f8fafc"></a-light>
+      
+      <!-- Cartel Descriptivo -->
+      <a-entity position="2.6 -0.5 0.05">
+        <a-plane width="1.4" height="1" color="#171717"></a-plane>
+        <a-text value="La Gran Ola de Kanagawa\n\nKatsushika Hokusai, 1831\nXilografia (Ukiyo-e).\nEl grabado mas famoso de Japon." 
+                align="left" position="-0.6 0 0.02" width="1.9" color="#fbbf24"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- CUADRO 4: La Joven de la Perla (Trasero izquierdo) -->
+    <a-entity position="-6 2.8 14.7" rotation="0 180 0">
+      <a-box width="1.8" height="2.2" depth="0.1" color="#000"></a-box>
+      <a-plane position="0 0 0.051" width="1.6" height="2" src="#pearl"></a-plane>
+      <a-light type="spot" position="0 2 2" rotation="-35 0 0" intensity="1.3" angle="30" penumbra="0.6" color="#fff8f6"></a-light>
+      
+      <!-- Cartel Descriptivo -->
+      <a-entity position="1.6 -0.3 0.05">
+        <a-plane width="1.2" height="0.8" color="#171717"></a-plane>
+        <a-text value="La Joven de la Perla\n\nJohannes Vermeer, 1665\nObra cumbre de la edad\nde oro neerlandesa." 
+                align="left" position="-0.5 0 0.02" width="1.8" color="#fbbf24"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- CUADRO 5: La Persistencia de la Memoria (Trasero derecho) -->
+    <a-entity position="6 2.8 14.7" rotation="0 180 0">
+      <a-box width="2.4" height="1.8" depth="0.1" color="#854d0e"></a-box>
+      <a-plane position="0 0 0.051" width="2.2" height="1.6" src="#persistence"></a-plane>
+      <a-light type="spot" position="0 2 2" rotation="-35 0 0" intensity="1.4" angle="35" penumbra="0.6" color="#fef3c7"></a-light>
+      
+      <!-- Cartel Descriptivo -->
+      <a-entity position="2 -0.1 0.05">
+        <a-plane width="1.4" height="0.9" color="#171717"></a-plane>
+        <a-text value="Persistencia de la Memoria\n\nSalvador Dali, 1931\nOleo sobre lienzo.\nIcono absoluto del surrealismo." 
+                align="left" position="-0.6 0 0.02" width="1.8" color="#fbbf24"></a-text>
+      </a-entity>
+    </a-entity>
+
+  </a-scene>
+</body>
+</html>
