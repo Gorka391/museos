@@ -2,30 +2,36 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Museo VR de Coches Antiguos</title>
+  <title>Museo VR de Maquetas de Coches Antiguos</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     body { margin: 0; padding: 0; background-color: #050505; }
   </style>
 </head>
 <body>
-  <a-scene ui="enabled: true">
+  <a-scene ui="enabled: true" renderer="antialias: true; colorManagement: true;">
     
-    <!-- GESTIÓN DE RECURSOS -->
+    <!-- GESTIÓN DE RECURSOS: MAQUETAS 3D -->
     <a-assets>
-      <!-- Texturas Arquitectónicas -->
-      <img id="floor-texture" src="https://cdn.aframe.io/a-painter/images/floor.jpg" crossorigin="anonymous">
+      <!-- Modelos 3D GLTF/GLB -->
+      <!-- Coche central (Deportivo Clásico) -->
+      <a-asset-item id="car-centro" src="https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/ferrari.glb" crossorigin="anonymous"></a-asset-item>
       
-      <!-- Coches Clásicos -->
-      <img id="car1" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/1959_Cadillac_Eldorado_Biarritz.jpg/1200px-1959_Cadillac_Eldorado_Biarritz.jpg" crossorigin="anonymous">
-      <img id="car2" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/1965_Ford_Mustang_convertible.jpg/1200px-1965_Ford_Mustang_convertible.jpg" crossorigin="anonymous">
-      <img id="car3" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/VW_Kaefer_1.jpg/1200px-VW_Kaefer_1.jpg" crossorigin="anonymous">
-      <img id="car4" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Porsche_911_Carrera_RS_2.7.jpg/1200px-Porsche_911_Carrera_RS_2.7.jpg" crossorigin="anonymous">
-      <img id="car5" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Aston_Martin_DB5_--_07-06-2009.jpg/1200px-Aston_Martin_DB5_--_07-06-2009.jpg" crossorigin="anonymous">
+      <!-- Coche Izquierdo (Porsche) -->
+      <a-asset-item id="car-izq" src="https://raw.githubusercontent.com/05akalan57/react-three-fiber-nfsu2/b4facb77da94b62c51ea2e686c14101ec670f983/public/porsche.glb" crossorigin="anonymous"></a-asset-item>
+
+      <!-- Camión Clásico -->
+      <a-asset-item id="truck-clasico" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb" crossorigin="anonymous"></a-asset-item>
+
+      <!-- Buggy Antiguo -->
+      <a-asset-item id="buggy" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF-Binary/Buggy.glb" crossorigin="anonymous"></a-asset-item>
+
+      <!-- Coche Clásico (Babylon) -->
+      <a-asset-item id="car-clasico" src="https://raw.githubusercontent.com/BabylonJS/Assets/master/meshes/car.glb" crossorigin="anonymous"></a-asset-item>
     </a-assets>
 
     <!-- CÁMARA Y CONTROLES VR -->
-    <a-entity position="0 1.6 8">
+    <a-entity position="0 1.6 15">
       <a-camera look-controls wasd-controls="acceleration: 80">
         <a-cursor color="#ef4444"></a-cursor>
       </a-camera>
@@ -34,122 +40,107 @@
     <a-entity laser-controls="hand: right"></a-entity>
 
     <!-- ILUMINACIÓN SHOWROOM -->
-    <a-light type="ambient" color="#262626" intensity="1.2"></a-light>
-    <!-- Luces de techo de estilo industrial / garaje -->
-    <a-light type="point" intensity="0.5" position="0 7 0" distance="30" color="#fca5a5"></a-light>
-    <a-light type="point" intensity="0.3" position="-10 6 -10" distance="20" color="#fff"></a-light>
-    <a-light type="point" intensity="0.3" position="10 6 10" distance="20" color="#fff"></a-light>
+    <a-light type="ambient" color="#262626" intensity="1.5"></a-light>
+    
+    <!-- Luces de techo -->
+    <a-light type="point" intensity="0.5" position="0 8 0" distance="40" color="#fca5a5"></a-light>
+    <a-light type="directional" intensity="0.4" position="-5 6 5" color="#ffffff" castShadow="true"></a-light>
+    <a-light type="directional" intensity="0.3" position="5 6 -5" color="#ffffff"></a-light>
 
     <!-- ARQUITECTURA: SUELO, TECHO Y PAREDES -->
-    <!-- Suelo pulido oscuro (efecto asfalto/cemento) -->
-    <a-plane rotation="-90 0 0" width="45" height="45" color="#171717" material="roughness: 0.3; metalness: 0.5"></a-plane>
-    <!-- Techo Oscuro -->
-    <a-plane rotation="90 0 0" position="0 9 0" width="45" height="45" color="#0a0a0a" material="roughness: 1"></a-plane>
+    <!-- Suelo pulido (efecto asfalto/cemento) -->
+    <a-plane rotation="-90 0 0" width="60" height="60" color="#111" material="roughness: 0.1; metalness: 0.8"></a-plane>
+    <!-- Techo -->
+    <a-plane rotation="90 0 0" position="0 10 0" width="60" height="60" color="#050505" material="roughness: 1"></a-plane>
     
-    <!-- Paredes (Gris muy oscuro/rojo oscuro) -->
-    <a-box position="0 4.5 -18" width="36" height="9" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
-    <a-box position="0 4.5 18" width="36" height="9" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
-    <a-box position="-18 4.5 0" width="0.5" height="9" depth="36" color="#292524" material="roughness: 0.8"></a-box>
-    <a-box position="18 4.5 0" width="0.5" height="9" depth="36" color="#292524" material="roughness: 0.8"></a-box>
+    <!-- Paredes decorativas showroom -->
+    <a-box position="0 5 -20" width="40" height="10" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
+    <a-box position="0 5 20" width="40" height="10" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
+    <a-box position="-20 5 0" width="0.5" height="10" depth="40" color="#292524" material="roughness: 0.8"></a-box>
+    <a-box position="20 5 0" width="0.5" height="10" depth="40" color="#292524" material="roughness: 0.8"></a-box>
 
-    <!-- Columnas esquineras rojas estilo taller clásico -->
-    <a-cylinder position="-17.5 4.5 -17.5" radius="0.6" height="9" color="#b91c1c" material="metalness: 0.4"></a-cylinder>
-    <a-cylinder position="17.5 4.5 -17.5" radius="0.6" height="9" color="#b91c1c" material="metalness: 0.4"></a-cylinder>
-    <a-cylinder position="-17.5 4.5 17.5" radius="0.6" height="9" color="#b91c1c" material="metalness: 0.4"></a-cylinder>
-    <a-cylinder position="17.5 4.5 17.5" radius="0.6" height="9" color="#b91c1c" material="metalness: 0.4"></a-cylinder>
+    <!-- EXPOSICIÓN DE MAQUETAS 3D -->
 
-    <!-- CENTRO DEL SHOWROOM: Plataforma Elevadora Rotatoria -->
+    <!-- MAQUETA 1: CENTRO (Deportivo Clásico) -->
     <a-entity position="0 0 0">
-      <!-- Base de la plataforma -->
-      <a-cylinder position="0 0.1 0" radius="4" height="0.2" color="#404040" material="metalness: 0.6; roughness: 0.3"></a-cylinder>
-      <a-cylinder position="0 0.25 0" radius="3.8" height="0.1" color="#ef4444" material="metalness: 0.4"></a-cylinder>
+      <a-cylinder position="0 0.1 0" radius="4.5" height="0.2" color="#404040" material="metalness: 0.6; roughness: 0.3"></a-cylinder>
+      <a-cylinder position="0 0.25 0" radius="4.3" height="0.1" color="#ef4444" material="metalness: 0.4"></a-cylinder>
       
-      <!-- Coche central (Proyección 2D en plano, rotando suave y elegante) -->
-      <a-entity position="0 1.8 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 25000; easing: linear">
-        <a-plane width="5" height="3" src="#car5" material="side: double; transparent: false" rotation="0 0 0"></a-plane>
+      <!-- Coche en 3D rotando sobre la plataforma -->
+      <a-entity position="0 0.3 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear">
+        <a-gltf-model src="#car-centro" scale="1.2 1.2 1.2"></a-gltf-model>
       </a-entity>
 
-      <!-- Focos de luz bajo la plataforma -->
-      <a-light type="spot" color="#ef4444" intensity="3" position="0 0.5 2" rotation="60 0 0" angle="45" penumbra="0.5"></a-light>
-      <a-light type="spot" color="#ef4444" intensity="3" position="0 0.5 -2" rotation="60 180 0" angle="45" penumbra="0.5"></a-light>
+      <!-- Focos cenitales -->
+      <a-light type="spot" color="#ef4444" intensity="2" position="0 5 0" rotation="-90 0 0" angle="45" penumbra="0.5"></a-light>
       
-      <!-- Cartel Descriptivo Central -->
-      <a-entity position="0 0.6 4.2" rotation="-15 0 0">
+      <!-- Cartel Descriptivo -->
+      <a-entity position="0 0.8 5.5" rotation="-15 0 0">
+        <a-plane width="3" height="1.2" color="#111"></a-plane>
+        <a-text value="Deportivo Legendario de las Carreras\n\nMaqueta 3D altamente detallada.\nDiseno aerodinamico que marco una era\nen las competiciones internacionales." 
+                align="center" position="0 0 0.02" width="2.8" color="#f8fafc"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- MAQUETA 2: IZQUIERDA (Buggy Clásico) -->
+    <a-entity position="-10 0 0" rotation="0 45 0">
+      <a-box position="0 0.1 0" width="5" height="0.2" depth="6" color="#262626" material="metalness: 0.5"></a-box>
+      
+      <a-gltf-model src="#buggy" position="0 0.2 0" scale="0.02 0.02 0.02"></a-gltf-model>
+
+      <a-light type="spot" color="#60a5fa" intensity="2" position="0 4 0" rotation="-90 0 0" angle="35" penumbra="0.5"></a-light>
+
+      <a-entity position="3.5 1 2" rotation="-10 -45 0">
         <a-plane width="2.5" height="1.2" color="#111"></a-plane>
-        <a-text value="Aston Martin DB5 (1963)\n\nEl coche mas famoso de la historia del cine,\nconocido por aparacer en las peliculas de 007.\nMotor de 6 cilindros en linea, 4 litros, 282 CV." 
-                align="center" position="0 0 0.02" width="2.3" color="#f8fafc"></a-text>
+        <a-text value="Beach Buggy Antiguo (1970)\n\nEl vehiculo clasico para las dunas.\nEstructura tubular con motor trasero,\nun icono de la cultura surfera." 
+                align="center" position="0 0 0.02" width="2.4" color="#bfdbfe"></a-text>
       </a-entity>
     </a-entity>
 
-    <!-- ZONAS DE DESCANSO (Bancos de taller moderno) -->
-    <a-entity position="-8 0 0" rotation="0 90 0">
-      <a-box position="0 0.4 0" width="3" height="0.1" depth="0.8" color="#111" material="roughness: 0.4"></a-box>
-      <a-cylinder position="-1.2 0.2 0" radius="0.1" height="0.4" color="#ef4444"></a-cylinder>
-      <a-cylinder position="1.2 0.2 0" radius="0.1" height="0.4" color="#ef4444"></a-cylinder>
-    </a-entity>
-    <a-entity position="8 0 0" rotation="0 -90 0">
-      <a-box position="0 0.4 0" width="3" height="0.1" depth="0.8" color="#111" material="roughness: 0.4"></a-box>
-      <a-cylinder position="-1.2 0.2 0" radius="0.1" height="0.4" color="#ef4444"></a-cylinder>
-      <a-cylinder position="1.2 0.2 0" radius="0.1" height="0.4" color="#ef4444"></a-cylinder>
-    </a-entity>
-
-
-    <!-- GALERÍA DE COCHES CLÁSICOS -->
-
-    <!-- COCHE 1: Cadillac Eldorado (Frontal) -->
-    <a-entity position="0 3 -17.5">
-      <!-- Marco Negro -->
-      <a-box width="5.2" height="3.2" depth="0.2" color="#111" material="roughness: 0.5"></a-box>
-      <a-plane position="0 0 0.11" width="5" height="3" src="#car1"></a-plane>
-      <a-light type="spot" position="0 2.5 2" rotation="-40 0 0" intensity="2" angle="45" penumbra="0.6" color="#fff"></a-light>
+    <!-- MAQUETA 3: DERECHA (Camión Antiguo / Milk Truck) -->
+    <a-entity position="10 0 0" rotation="0 -45 0">
+      <a-box position="0 0.1 0" width="5" height="0.2" depth="6" color="#262626" material="metalness: 0.5"></a-box>
       
-      <!-- Cartel Descriptivo -->
-      <a-entity position="3.8 -0.8 0.11">
-        <a-plane width="2.2" height="1.4" color="#111827"></a-plane>
-        <a-text value="Cadillac Eldorado (1959)\n\nSimbolo del sueno americano y exceso.\nCon sus inmensas aletas traseras 'tailfins'.\nMotor V8 de 345 CV." 
-                align="left" position="-0.9 0 0.02" width="2" color="#fca5a5"></a-text>
+      <a-gltf-model src="#truck-clasico" position="0 0.2 0" scale="0.6 0.6 0.6"></a-gltf-model>
+
+      <a-light type="spot" color="#fbbf24" intensity="2" position="0 4 0" rotation="-90 0 0" angle="35" penumbra="0.5"></a-light>
+
+      <a-entity position="-3.5 1 2" rotation="-10 45 0">
+        <a-plane width="2.5" height="1.2" color="#111"></a-plane>
+        <a-text value="Camioneta de Reparto (1920s)\n\nFiel representacion de los primeros\nvehiculos comerciales de la epoca.\nChasis robusto y cabina de madera." 
+                align="center" position="0 0 0.02" width="2.4" color="#fef3c7"></a-text>
       </a-entity>
     </a-entity>
 
-    <!-- COCHE 2: Ford Mustang (Izquierdo) -->
-    <a-entity position="-17.5 3 0" rotation="0 90 0">
-      <a-box width="5.2" height="3.2" depth="0.2" color="#111"></a-box>
-      <a-plane position="0 0 0.11" width="5" height="3" src="#car2"></a-plane>
-      <a-light type="spot" position="0 2.5 2" rotation="-40 0 0" intensity="2" angle="45" penumbra="0.6" color="#fff"></a-light>
+    <!-- MAQUETA 4: TRASERA IZQUIERDA (Porsche) -->
+    <a-entity position="-8 0 -12" rotation="0 30 0">
+      <a-cylinder position="0 0.1 0" radius="3" height="0.2" color="#111" material="metalness: 0.8"></a-cylinder>
       
-      <!-- Cartel Descriptivo -->
-      <a-entity position="3.8 -0.8 0.11">
-        <a-plane width="2.2" height="1.4" color="#111827"></a-plane>
-        <a-text value="Ford Mustang (1965)\n\nEl creador de la clase de los 'Pony Cars'.\nDeportivo, compacto y asequible.\nUno de los coches mas vendidos de Ford." 
-                align="left" position="-0.9 0 0.02" width="2" color="#fca5a5"></a-text>
+      <!-- Se asume escala en 1 o ligeramente más grande -->
+      <a-gltf-model src="#car-izq" position="0 0.2 0" scale="1 1 1"></a-gltf-model>
+      
+      <a-light type="spot" color="#a78bfa" intensity="2" position="0 4 0" rotation="-90 0 0" angle="40" penumbra="0.5"></a-light>
+      
+      <a-entity position="0 0.8 3.5" rotation="-15 0 0">
+        <a-plane width="2.4" height="1.2" color="#111"></a-plane>
+        <a-text value="Deportivo de Motor Trasero\n\nMaqueta de un icono europeo.\nReconococido mundialmente por sus\nfaros redondos y carroceria inconfundible." 
+                align="center" position="0 0 0.02" width="2.3" color="#ede9fe"></a-text>
       </a-entity>
     </a-entity>
 
-    <!-- COCHE 3: Volkswagen Beetle (Derecho) -->
-    <a-entity position="17.5 3 0" rotation="0 -90 0">
-      <a-box width="5.2" height="3.2" depth="0.2" color="#111"></a-box>
-      <a-plane position="0 0 0.11" width="5" height="3" src="#car3"></a-plane>
-      <a-light type="spot" position="0 2.5 2" rotation="-40 0 0" intensity="2" angle="45" penumbra="0.6" color="#fff"></a-light>
+    <!-- MAQUETA 5: TRASERA DERECHA (Coche Clásico Babylon) -->
+    <a-entity position="8 0 -12" rotation="0 -30 0">
+      <a-cylinder position="0 0.1 0" radius="3" height="0.2" color="#111" material="metalness: 0.8"></a-cylinder>
       
-      <!-- Cartel Descriptivo -->
-      <a-entity position="3.8 -0.8 0.11">
-        <a-plane width="2.2" height="1.4" color="#111827"></a-plane>
-        <a-text value="Volkswagen Escarabajo\n\nFabricado desde 1938 hasta 2003.\nDisenado para ser funcional y asequible.\nMotor trasero refrigerado por aire." 
-                align="left" position="-0.9 0 0.02" width="2" color="#fca5a5"></a-text>
-      </a-entity>
-    </a-entity>
-
-    <!-- COCHE 4: Porsche 911 (Trasero) -->
-    <a-entity position="0 3 17.5" rotation="0 180 0">
-      <a-box width="5.2" height="3.2" depth="0.2" color="#111"></a-box>
-      <a-plane position="0 0 0.11" width="5" height="3" src="#car4"></a-plane>
-      <a-light type="spot" position="0 2.5 2" rotation="-40 0 0" intensity="2" angle="45" penumbra="0.6" color="#fff"></a-light>
+      <!-- Generic car, scale adjusted just in case -->
+      <a-gltf-model src="#car-clasico" position="0 0.2 0" scale="1 1 1" rotation="0 180 0"></a-gltf-model>
       
-      <!-- Cartel Descriptivo -->
-      <a-entity position="3.8 -0.8 0.11">
-        <a-plane width="2.2" height="1.4" color="#111827"></a-plane>
-        <a-text value="Porsche 911 Carrera (1973)\n\nDeportivo legendario de motor trasero.\nReconocido por su faldon delantero y\nsu inconfundible aleron 'cola de pato'." 
-                align="left" position="-0.9 0 0.02" width="2" color="#fca5a5"></a-text>
+      <a-light type="spot" color="#34d399" intensity="2" position="0 4 0" rotation="-90 0 0" angle="40" penumbra="0.5"></a-light>
+      
+      <a-entity position="0 0.8 3.5" rotation="-15 0 0">
+        <a-plane width="2.4" height="1.2" color="#111"></a-plane>
+        <a-text value="Berlina de la Decada de los 40\n\nRepresentacion pura del estilo\nautomovilistico de posguerra.\nAmplio interior y solida construccion." 
+                align="center" position="0 0 0.02" width="2.3" color="#d1fae5"></a-text>
       </a-entity>
     </a-entity>
 
