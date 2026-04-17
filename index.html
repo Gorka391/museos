@@ -2,124 +2,629 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Museo VR de Maquetas de Coches Antiguos</title>
+  <title>Exposición VR - Coches Clásicos de Rally</title>
+  <meta name="description" content="Museo virtual 3D de coches clásicos de rally y sport de los años 80 y 90. Experiencia VR inmersiva.">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
-    body { margin: 0; padding: 0; background-color: #050505; }
+    body { margin: 0; padding: 0; background: #000; overflow: hidden; }
   </style>
 </head>
 <body>
-  <a-scene ui="enabled: true" renderer="antialias: true; colorManagement: true;">
-    
-    <!-- GESTIÓN DE RECURSOS: MAQUETAS 3D -->
-    <a-assets>
-      <!-- Modelos 3D precisos de vehículos clásicos -->
-      
-      <!-- Coche Izquierdo (Porsche 911 Clásico) -->
-      <a-asset-item id="porsche-model" src="https://raw.githubusercontent.com/05akalan57/react-three-fiber-nfsu2/b4facb77da94b62c51ea2e686c14101ec670f983/public/porsche.glb" crossorigin="anonymous"></a-asset-item>
+<a-scene renderer="antialias: true; colorManagement: true;" fog="type: linear; color: #1a1a1a; near: 30; far: 65">
 
-      <!-- Fageol Truck Clásico -->
-      <a-asset-item id="fageol-truck" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb" crossorigin="anonymous"></a-asset-item>
+<script>
+// ========== COMPONENTE: LOW-POLY CAR BUILDER ==========
+AFRAME.registerComponent('lowpoly-car', {
+  schema: {
+    bodyColor:   { type: 'color', default: '#ffffff' },
+    accentColor: { type: 'color', default: '#333333' },
+    wheelColor:  { type: 'color', default: '#111111' },
+    rimColor:    { type: 'color', default: '#ccc' },
+    // Body shape
+    bodyLength:  { type: 'number', default: 3.6 },
+    bodyWidth:   { type: 'number', default: 1.6 },
+    bodyHeight:  { type: 'number', default: 0.6 },
+    // Cabin
+    cabinLength: { type: 'number', default: 1.8 },
+    cabinHeight: { type: 'number', default: 0.55 },
+    cabinOffset: { type: 'number', default: -0.1 },
+    // Features
+    hasSpoiler:    { type: 'boolean', default: false },
+    spoilerHeight: { type: 'number', default: 0.6 },
+    hasWhaleTail:  { type: 'boolean', default: false },
+    isHatchback:   { type: 'boolean', default: false },
+    isLowSport:    { type: 'boolean', default: false },
+    wheelRadius:   { type: 'number', default: 0.28 },
+    stripeColor:   { type: 'color', default: '' },
+  },
 
-      <!-- Meyers Manx Buggy Antiguo -->
-      <a-asset-item id="meyers-buggy" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF-Binary/Buggy.glb" crossorigin="anonymous"></a-asset-item>
+  init: function () {
+    const d = this.data;
+    const el = this.el;
+    const bL = d.bodyLength, bW = d.bodyWidth, bH = d.bodyHeight;
+    const cL = d.cabinLength, cH = d.cabinHeight;
+    const baseY = d.wheelRadius + 0.05;
 
-      <!-- Plymouth Deluxe (Babylon Car) -->
-      <a-asset-item id="plymouth-sedan" src="https://raw.githubusercontent.com/BabylonJS/Assets/master/meshes/car.glb" crossorigin="anonymous"></a-asset-item>
-    </a-assets>
+    // ---- CHASSIS / UNDERBODY ----
+    const chassis = document.createElement('a-box');
+    chassis.setAttribute('width', bL);
+    chassis.setAttribute('height', 0.1);
+    chassis.setAttribute('depth', bW);
+    chassis.setAttribute('position', `0 ${baseY - 0.05} 0`);
+    chassis.setAttribute('color', '#111');
+    chassis.setAttribute('material', 'roughness: 0.8');
+    el.appendChild(chassis);
 
-    <!-- CÁMARA Y CONTROLES VR -->
-    <a-entity position="0 1.6 4">
-      <a-camera look-controls wasd-controls="acceleration: 80">
-        <a-cursor color="#ef4444"></a-cursor>
-      </a-camera>
-    </a-entity>
-    <a-entity laser-controls="hand: left"></a-entity>
-    <a-entity laser-controls="hand: right"></a-entity>
+    // ---- MAIN BODY ----
+    const body = document.createElement('a-box');
+    body.setAttribute('width', bL);
+    body.setAttribute('height', bH);
+    body.setAttribute('depth', bW);
+    body.setAttribute('position', `0 ${baseY + bH / 2} 0`);
+    body.setAttribute('color', d.bodyColor);
+    body.setAttribute('material', `roughness: 0.3; metalness: 0.5`);
+    el.appendChild(body);
 
-    <!-- ILUMINACIÓN SHOWROOM PREMIUM -->
-    <a-light type="ambient" color="#262626" intensity="1.5"></a-light>
-    <a-light type="point" intensity="0.6" position="0 8 0" distance="40" color="#fca5a5"></a-light>
-    <a-light type="directional" intensity="0.5" position="-5 6 5" color="#ffffff" castShadow="true"></a-light>
-    <a-light type="directional" intensity="0.3" position="5 6 -5" color="#ffffff"></a-light>
+    // ---- CABIN ----
+    const cabY = baseY + bH + cH / 2;
+    const cabin = document.createElement('a-box');
+    cabin.setAttribute('width', cL);
+    cabin.setAttribute('height', cH);
+    cabin.setAttribute('depth', bW * 0.92);
+    cabin.setAttribute('position', `${d.cabinOffset} ${cabY} 0`);
+    cabin.setAttribute('color', '#222');
+    cabin.setAttribute('material', 'roughness: 0.1; metalness: 0.3; opacity: 0.7; transparent: true');
+    el.appendChild(cabin);
 
-    <!-- ARQUITECTURA: SUELO, TECHO Y PAREDES -->
-    <a-plane rotation="-90 0 0" width="60" height="60" color="#111" material="roughness: 0.1; metalness: 0.8"></a-plane>
-    <a-plane rotation="90 0 0" position="0 10 0" width="60" height="60" color="#050505" material="roughness: 1"></a-plane>
-    
-    <a-box position="0 5 -15" width="30" height="10" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
-    <a-box position="0 5 15" width="30" height="10" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
-    <a-box position="-15 5 0" width="0.5" height="10" depth="30" color="#292524" material="roughness: 0.8"></a-box>
-    <a-box position="15 5 0" width="0.5" height="10" depth="30" color="#292524" material="roughness: 0.8"></a-box>
+    // ---- WINDSHIELDS (front & rear) ----
+    const wsH = cH * 0.9;
+    const wsFront = document.createElement('a-box');
+    wsFront.setAttribute('width', 0.04);
+    wsFront.setAttribute('height', wsH);
+    wsFront.setAttribute('depth', bW * 0.85);
+    wsFront.setAttribute('position', `${d.cabinOffset + cL / 2 + 0.15} ${cabY} 0`);
+    wsFront.setAttribute('rotation', '0 0 15');
+    wsFront.setAttribute('color', '#1a3a5c');
+    wsFront.setAttribute('material', 'opacity: 0.5; transparent: true; metalness: 0.8');
+    el.appendChild(wsFront);
 
-    <!-- MAQUETAS REALES DE COCHES CLÁSICOS (4 Vehículos Auténticos) -->
+    if (!d.isHatchback) {
+      const wsRear = document.createElement('a-box');
+      wsRear.setAttribute('width', 0.04);
+      wsRear.setAttribute('height', wsH);
+      wsRear.setAttribute('depth', bW * 0.85);
+      wsRear.setAttribute('position', `${d.cabinOffset - cL / 2 - 0.15} ${cabY} 0`);
+      wsRear.setAttribute('rotation', '0 0 -15');
+      wsRear.setAttribute('color', '#1a3a5c');
+      wsRear.setAttribute('material', 'opacity: 0.5; transparent: true; metalness: 0.8');
+      el.appendChild(wsRear);
+    }
 
-    <!-- MAQUETA 1: CENTRO-IZQUIERDA (Buggy Clásico) -->
-    <a-entity position="-5.5 0 -4" rotation="0 30 0">
-      <a-cylinder position="0 0.1 0" radius="3" height="0.2" color="#404040" material="metalness: 0.6; roughness: 0.3"></a-cylinder>
-      <a-cylinder position="0 0.25 0" radius="2.8" height="0.1" color="#ef4444" material="metalness: 0.4"></a-cylinder>
-      
-      <a-entity position="0 0.3 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear">
-        <a-gltf-model src="#meyers-buggy" scale="0.025 0.025 0.025"></a-gltf-model>
-      </a-entity>
+    // ---- HEADLIGHTS ----
+    for (let side of [-1, 1]) {
+      const hl = document.createElement('a-box');
+      hl.setAttribute('width', 0.06);
+      hl.setAttribute('height', 0.15);
+      hl.setAttribute('depth', 0.25);
+      hl.setAttribute('position', `${bL / 2 + 0.02} ${baseY + bH * 0.5} ${side * bW * 0.3}`);
+      hl.setAttribute('color', '#ffffcc');
+      hl.setAttribute('material', 'emissive: #ffffaa; emissiveIntensity: 0.3');
+      el.appendChild(hl);
+    }
 
-      <a-light type="spot" color="#60a5fa" intensity="2" position="0 5 0" rotation="-90 0 0" angle="45" penumbra="0.5"></a-light>
+    // ---- TAILLIGHTS ----
+    for (let side of [-1, 1]) {
+      const tl = document.createElement('a-box');
+      tl.setAttribute('width', 0.06);
+      tl.setAttribute('height', 0.12);
+      tl.setAttribute('depth', 0.3);
+      tl.setAttribute('position', `${-bL / 2 - 0.02} ${baseY + bH * 0.45} ${side * bW * 0.3}`);
+      tl.setAttribute('color', '#ff2222');
+      tl.setAttribute('material', 'emissive: #ff0000; emissiveIntensity: 0.3');
+      el.appendChild(tl);
+    }
 
-      <a-entity position="0 0.8 3.5" rotation="-15 0 0">
-        <a-plane width="2.8" height="1.2" color="#111"></a-plane>
-        <a-text value="Meyers Manx Buggy (1964)\n\nEl autentico buggy original.\nBasado en el chasis acortado de un\nVolkswagen Escarabajo. Icono de California." 
-                align="center" position="0 0 0.02" width="2.6" color="#bfdbfe"></a-text>
-      </a-entity>
-    </a-entity>
+    // ---- FRONT BUMPER ----
+    const bumperF = document.createElement('a-box');
+    bumperF.setAttribute('width', 0.12);
+    bumperF.setAttribute('height', 0.2);
+    bumperF.setAttribute('depth', bW + 0.05);
+    bumperF.setAttribute('position', `${bL / 2 + 0.05} ${baseY + 0.1} 0`);
+    bumperF.setAttribute('color', d.accentColor);
+    bumperF.setAttribute('material', 'roughness: 0.4');
+    el.appendChild(bumperF);
 
-    <!-- MAQUETA 2: CENTRO-DERECHA (Porsche 911) -->
-    <a-entity position="5.5 0 -4" rotation="0 -30 0">
-      <a-cylinder position="0 0.1 0" radius="3" height="0.2" color="#404040" material="metalness: 0.6; roughness: 0.3"></a-cylinder>
-      <a-cylinder position="0 0.25 0" radius="2.8" height="0.1" color="#ef4444" material="metalness: 0.4"></a-cylinder>
-      
-      <a-entity position="0 0.3 0" animation="property: rotation; to: 0 -360 0; loop: true; dur: 22000; easing: linear">
-        <a-gltf-model src="#porsche-model" scale="1.1 1.1 1.1"></a-gltf-model>
-      </a-entity>
+    // ---- REAR BUMPER ----
+    const bumperR = document.createElement('a-box');
+    bumperR.setAttribute('width', 0.12);
+    bumperR.setAttribute('height', 0.2);
+    bumperR.setAttribute('depth', bW + 0.05);
+    bumperR.setAttribute('position', `${-bL / 2 - 0.05} ${baseY + 0.1} 0`);
+    bumperR.setAttribute('color', d.accentColor);
+    bumperR.setAttribute('material', 'roughness: 0.4');
+    el.appendChild(bumperR);
 
-      <a-light type="spot" color="#a78bfa" intensity="2" position="0 5 0" rotation="-90 0 0" angle="45" penumbra="0.5"></a-light>
+    // ---- GRILLE ----
+    const grille = document.createElement('a-box');
+    grille.setAttribute('width', 0.05);
+    grille.setAttribute('height', 0.25);
+    grille.setAttribute('depth', bW * 0.5);
+    grille.setAttribute('position', `${bL / 2 + 0.01} ${baseY + bH * 0.3} 0`);
+    grille.setAttribute('color', '#222');
+    grille.setAttribute('material', 'roughness: 0.2; metalness: 0.8');
+    el.appendChild(grille);
 
-      <a-entity position="0 0.8 3.5" rotation="-15 0 0">
-        <a-plane width="2.8" height="1.2" color="#111"></a-plane>
-        <a-text value="Porsche 911 Carrera (1973)\n\nEl deportivo de motor trasero por excelencia.\nCon su reconocible silueta y los miticos\nfaros redondos de la primera generacion." 
-                align="center" position="0 0 0.02" width="2.6" color="#ede9fe"></a-text>
-      </a-entity>
-    </a-entity>
+    // ---- STRIPE (if provided) ----
+    if (d.stripeColor) {
+      const stripe = document.createElement('a-box');
+      stripe.setAttribute('width', bL + 0.02);
+      stripe.setAttribute('height', 0.08);
+      stripe.setAttribute('depth', bW + 0.01);
+      stripe.setAttribute('position', `0 ${baseY + bH * 0.7} 0`);
+      stripe.setAttribute('color', d.stripeColor);
+      stripe.setAttribute('material', 'roughness: 0.3');
+      el.appendChild(stripe);
+    }
 
-    <!-- MAQUETA 3: TRASERA-IZQUIERDA (Fageol Milk Truck) -->
-    <a-entity position="-8 0 -10.5" rotation="0 50 0">
-      <a-box position="0 0.1 0" width="5" height="0.2" depth="6.5" color="#111" material="metalness: 0.8"></a-box>
-      
-      <a-gltf-model src="#fageol-truck" position="0 0.2 0" scale="0.7 0.7 0.7"></a-gltf-model>
+    // ---- SPOILER ----
+    if (d.hasSpoiler) {
+      const spoilerBase = document.createElement('a-box');
+      spoilerBase.setAttribute('width', 0.06);
+      spoilerBase.setAttribute('height', d.spoilerHeight);
+      spoilerBase.setAttribute('depth', 0.06);
+      const spY = baseY + bH + d.spoilerHeight / 2;
+      spoilerBase.setAttribute('position', `${-bL / 2 + 0.3} ${spY} ${bW * 0.3}`);
+      spoilerBase.setAttribute('color', d.bodyColor);
+      el.appendChild(spoilerBase);
 
-      <a-light type="spot" color="#fbbf24" intensity="2" position="0 5 0" rotation="-90 0 0" angle="40" penumbra="0.5"></a-light>
+      const spoilerBase2 = spoilerBase.cloneNode(true);
+      spoilerBase2.setAttribute('position', `${-bL / 2 + 0.3} ${spY} ${-bW * 0.3}`);
+      el.appendChild(spoilerBase2);
 
-      <a-entity position="3.5 1 2" rotation="-10 -50 0">
-        <a-plane width="3" height="1.2" color="#111"></a-plane>
-        <a-text value="Fageol Delivery Truck (1920)\n\nVehiculo de reparto puramente historico.\nEste modelo se utilizaba a principios\ndel S.XX para transporte urbano ligero." 
-                align="center" position="0 0 0.02" width="2.8" color="#fef3c7"></a-text>
-      </a-entity>
-    </a-entity>
+      const spoilerWing = document.createElement('a-box');
+      spoilerWing.setAttribute('width', 0.2);
+      spoilerWing.setAttribute('height', 0.04);
+      spoilerWing.setAttribute('depth', bW + 0.15);
+      spoilerWing.setAttribute('position', `${-bL / 2 + 0.3} ${baseY + bH + d.spoilerHeight + 0.02} 0`);
+      spoilerWing.setAttribute('color', d.bodyColor);
+      spoilerWing.setAttribute('material', 'roughness: 0.2; metalness: 0.4');
+      el.appendChild(spoilerWing);
+    }
 
-    <!-- MAQUETA 4: TRASERA-DERECHA (Plymouth Sedan) -->
-    <a-entity position="8 0 -10.5" rotation="0 -50 0">
-      <a-box position="0 0.1 0" width="5" height="0.2" depth="6.5" color="#111" material="metalness: 0.8"></a-box>
-      
-      <a-gltf-model src="#plymouth-sedan" position="0 0.2 0" scale="1.3 1.3 1.3" rotation="0 180 0"></a-gltf-model>
-      
-      <a-light type="spot" color="#34d399" intensity="2" position="0 5 0" rotation="-90 0 0" angle="40" penumbra="0.5"></a-light>
-      
-      <a-entity position="-3.5 1 2" rotation="-10 50 0">
-        <a-plane width="3" height="1.2" color="#111"></a-plane>
-        <a-text value="Plymouth Deluxe Sedan (1940)\n\nElegante berlina clasica.\nRefleja el inconfundible estilo automotor\nde los a~os 40: formas abultadas y durabilidad." 
-                align="center" position="0 0 0.02" width="2.8" color="#d1fae5"></a-text>
-      </a-entity>
-    </a-entity>
+    // ---- WHALE TAIL ----
+    if (d.hasWhaleTail) {
+      const wt = document.createElement('a-box');
+      wt.setAttribute('width', 0.5);
+      wt.setAttribute('height', 0.06);
+      wt.setAttribute('depth', bW + 0.1);
+      wt.setAttribute('position', `${-bL / 2 + 0.2} ${baseY + bH + cH * 0.3} 0`);
+      wt.setAttribute('rotation', '0 0 -10');
+      wt.setAttribute('color', d.bodyColor);
+      wt.setAttribute('material', 'roughness: 0.2; metalness: 0.4');
+      el.appendChild(wt);
+    }
 
-  </a-scene>
+    // ---- WHEELS ----
+    const wR = d.wheelRadius;
+    const wheelPositions = [
+      { x: bL * 0.33,  z: bW / 2 + 0.02 },
+      { x: bL * 0.33,  z: -bW / 2 - 0.02 },
+      { x: -bL * 0.33, z: bW / 2 + 0.02 },
+      { x: -bL * 0.33, z: -bW / 2 - 0.02 },
+    ];
+    wheelPositions.forEach(wp => {
+      // Tire
+      const tire = document.createElement('a-cylinder');
+      tire.setAttribute('radius', wR);
+      tire.setAttribute('height', 0.18);
+      tire.setAttribute('rotation', '90 0 0');
+      tire.setAttribute('position', `${wp.x} ${wR} ${wp.z}`);
+      tire.setAttribute('color', d.wheelColor);
+      tire.setAttribute('material', 'roughness: 0.9');
+      el.appendChild(tire);
+      // Rim
+      const rim = document.createElement('a-cylinder');
+      rim.setAttribute('radius', wR * 0.55);
+      rim.setAttribute('height', 0.19);
+      rim.setAttribute('rotation', '90 0 0');
+      rim.setAttribute('position', `${wp.x} ${wR} ${wp.z}`);
+      rim.setAttribute('color', d.rimColor);
+      rim.setAttribute('material', 'roughness: 0.2; metalness: 0.8');
+      el.appendChild(rim);
+    });
+
+    // low-sport adjustments
+    if (d.isLowSport) {
+      el.setAttribute('position', {
+        x: el.getAttribute('position').x,
+        y: (el.getAttribute('position').y || 0) - 0.08,
+        z: el.getAttribute('position').z
+      });
+    }
+  }
+});
+
+// ========== CAR DATA ==========
+const CARS = [
+  // ROW 1
+  {
+    name: 'BMW M3 E30', year: '1986-91',
+    desc: 'El E30 M3 domino el turismo mundial.\\nMotor 4 cil. 2.3L, 200CV.\\nEl sedan deportivo perfecto de los 80.',
+    color: '#f0f0f0', accent: '#222', stripe: '#0066cc', rim: '#ccc',
+    spoiler: false, whaleTail: false, hatch: false, lowSport: false,
+    bL: 3.8, bW: 1.55, bH: 0.55, cL: 1.8, cH: 0.5, cO: 0
+  },
+  {
+    name: 'Ford Sierra RS Cosworth', year: '1986',
+    desc: 'La famosa ballena. Turbo 2.0L 204CV.\\nDomino rally y turismo con su\\ninconfundible aleron trasero gigante.',
+    color: '#f5f5f5', accent: '#1a1a1a', stripe: '', rim: '#ddd',
+    spoiler: false, whaleTail: true, hatch: true, lowSport: false,
+    bL: 3.9, bW: 1.6, bH: 0.55, cL: 2.0, cH: 0.5, cO: 0.1
+  },
+  {
+    name: 'Lancia 037', year: '1982',
+    desc: 'Ultimo coche de traccion trasera en\\nganar el WRC. Supercharged 2.0L 325CV.\\nOro absoluto del rally italiano.',
+    color: '#ffffff', accent: '#cc0000', stripe: '#cc0000', rim: '#ddd',
+    spoiler: true, whaleTail: false, hatch: false, lowSport: true,
+    bL: 3.5, bW: 1.7, bH: 0.45, cL: 1.4, cH: 0.42, cO: 0.2,
+    sH: 0.25
+  },
+  {
+    name: 'Opel Kadett GSi', year: '1988',
+    desc: 'El compacto aleman mas deportivo.\\nMotor 2.0L 156CV. Rival del Golf GTI\\ny favorito en los rallies nacionales.',
+    color: '#cc0000', accent: '#222', stripe: '', rim: '#aaa',
+    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.5, bW: 1.5, bH: 0.52, cL: 1.6, cH: 0.48, cO: 0.15,
+    sH: 0.35
+  },
+  // ROW 2
+  {
+    name: 'Lancia Delta HF Integrale', year: '1987',
+    desc: 'El rey indiscutible del WRC.\\n6 campeonatos consecutivos.\\nTurbo 2.0L 215CV, traccion total.',
+    color: '#cc0000', accent: '#222', stripe: '#ffffff', rim: '#ddd',
+    spoiler: false, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.4, bW: 1.6, bH: 0.55, cL: 1.5, cH: 0.5, cO: 0.15
+  },
+  {
+    name: 'Subaru Impreza WRX STI', year: '1994',
+    desc: 'El legendario azul con llantas doradas.\\nBoxer turbo 2.0L 280CV. AWD.\\nEl cohete japones del rally mundial.',
+    color: '#003399', accent: '#222', stripe: '', rim: '#daa520',
+    spoiler: true, whaleTail: false, hatch: false, lowSport: false,
+    bL: 3.8, bW: 1.55, bH: 0.55, cL: 1.7, cH: 0.48, cO: -0.1,
+    sH: 0.5
+  },
+  {
+    name: 'Mitsubishi Lancer Evo VI', year: '1999',
+    desc: 'El rival mortal del Impreza.\\nTurbo 2.0L 280CV, traccion total.\\n6 veces campeon del WRC con Makinen.',
+    color: '#f0f0f0', accent: '#333', stripe: '', rim: '#bbb',
+    spoiler: true, whaleTail: false, hatch: false, lowSport: false,
+    bL: 3.9, bW: 1.55, bH: 0.55, cL: 1.7, cH: 0.48, cO: -0.1,
+    sH: 0.55
+  },
+  {
+    name: 'Toyota Celica GT-Four', year: '1994',
+    desc: 'El coupe rally de Toyota.\\nTurbo 2.0L 255CV. Traccion total.\\nVencedor del WRC con Carlos Sainz.',
+    color: '#f0f0f0', accent: '#cc0000', stripe: '#cc0000', rim: '#ccc',
+    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.7, bW: 1.6, bH: 0.5, cL: 1.6, cH: 0.45, cO: 0.2,
+    sH: 0.4
+  },
+  // ROW 3
+  {
+    name: 'Nissan Pulsar GTI-R', year: '1990',
+    desc: 'El pequeno monstruo de Nissan.\\nTurbo 2.0L 230CV en un compacto.\\nTraccion total. Bala de bolsillo.',
+    color: '#1a1aff', accent: '#222', stripe: '', rim: '#ccc',
+    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.3, bW: 1.5, bH: 0.5, cL: 1.4, cH: 0.45, cO: 0.15,
+    sH: 0.3
+  },
+  {
+    name: 'Mazda 323 GTX', year: '1990',
+    desc: 'La joya oculta de Mazda.\\nTurbo 1.8L 185CV, traccion total.\\nCompacto radical tipo hot-hatch extremo.',
+    color: '#990000', accent: '#222', stripe: '', rim: '#aaa',
+    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.4, bW: 1.5, bH: 0.52, cL: 1.5, cH: 0.46, cO: 0.1,
+    sH: 0.3
+  },
+  {
+    name: 'Toyota Corolla WRC', year: '1997',
+    desc: 'El Corolla mas radical de la historia.\\nMotor 2.0L turbo 300CV.\\nDisenado exclusivamente para el WRC.',
+    color: '#ffffff', accent: '#cc0000', stripe: '#cc0000', rim: '#ddd',
+    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.7, bW: 1.55, bH: 0.53, cL: 1.6, cH: 0.48, cO: 0.1,
+    sH: 0.45
+  },
+  {
+    name: 'Nissan Skyline GT-R R32', year: '1989',
+    desc: 'GODZILLA. Turbo biturbo RB26 2.6L\\n280CV, traccion total ATTESA.\\nInvicto en el JTCC Australia.',
+    color: '#3a3a3a', accent: '#222', stripe: '', rim: '#bbb',
+    spoiler: true, whaleTail: false, hatch: false, lowSport: false,
+    bL: 3.9, bW: 1.6, bH: 0.55, cL: 1.7, cH: 0.48, cO: -0.05,
+    sH: 0.3
+  },
+  // ROW 4
+  {
+    name: 'Ford Escort RS Cosworth', year: '1992',
+    desc: 'El Escort mas bestia jamas fabricado.\\nTurbo 2.0L 227CV, traccion total.\\nRefined version del Sierra con el aleron.',
+    color: '#f5f5f5', accent: '#003366', stripe: '', rim: '#ddd',
+    spoiler: false, whaleTail: true, hatch: true, lowSport: false,
+    bL: 3.6, bW: 1.55, bH: 0.52, cL: 1.6, cH: 0.48, cO: 0.1
+  },
+  {
+    name: 'Peugeot 306 Maxi', year: '1996',
+    desc: 'El kit-car frances mas exitoso.\\nAtmoferico 2.0L 280CV. Clase F2.\\nDomino los rallies de asfalto en Europa.',
+    color: '#cc0000', accent: '#222', stripe: '#ffffff', rim: '#ddd',
+    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.5, bW: 1.55, bH: 0.5, cL: 1.5, cH: 0.45, cO: 0.15,
+    sH: 0.4
+  },
+  {
+    name: 'Renault Clio Williams', year: '1993',
+    desc: 'Homenaje a la F1 de Williams-Renault.\\n2.0L 150CV. Compacto y agil.\\nEl hot-hatch frances por excelencia.',
+    color: '#003399', accent: '#daa520', stripe: '#daa520', rim: '#daa520',
+    spoiler: false, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.2, bW: 1.45, bH: 0.5, cL: 1.4, cH: 0.45, cO: 0.15
+  },
+  {
+    name: 'Peugeot 205 GTI', year: '1984',
+    desc: 'El hot-hatch definitivo de los 80.\\n1.9L 130CV. Chasis perfecto,\\ndireccion quirurgica. Obra maestra.',
+    color: '#666666', accent: '#222', stripe: '#cc0000', rim: '#aaa',
+    spoiler: false, whaleTail: false, hatch: true, lowSport: false,
+    bL: 3.2, bW: 1.45, bH: 0.5, cL: 1.3, cH: 0.45, cO: 0.15
+  }
+];
+
+// ========== GENERATE SCENE ON LOAD ==========
+document.addEventListener('DOMContentLoaded', () => {
+  const scene = document.querySelector('a-scene');
+
+  // Layout: 4 rows of 4 cars
+  const startX = -13.5;
+  const startZ = -8;
+  const spacingX = 9;
+  const spacingZ = 8;
+
+  CARS.forEach((car, i) => {
+    const row = Math.floor(i / 4);
+    const col = i % 4;
+    const posX = startX + col * spacingX;
+    const posZ = startZ + row * spacingZ;
+
+    // Platform
+    const platform = document.createElement('a-entity');
+    platform.setAttribute('position', `${posX} 0 ${posZ}`);
+
+    // Platform base
+    const base = document.createElement('a-box');
+    base.setAttribute('width', 5.5);
+    base.setAttribute('height', 0.12);
+    base.setAttribute('depth', 3);
+    base.setAttribute('position', '0 0.06 0');
+    base.setAttribute('color', '#1a1a1a');
+    base.setAttribute('material', 'roughness: 0.15; metalness: 0.7');
+    platform.appendChild(base);
+
+    // Platform accent border
+    const border = document.createElement('a-box');
+    border.setAttribute('width', 5.7);
+    border.setAttribute('height', 0.06);
+    border.setAttribute('depth', 3.2);
+    border.setAttribute('position', '0 0.01 0');
+    border.setAttribute('color', '#ff6a00');
+    border.setAttribute('material', 'roughness: 0.3; metalness: 0.5');
+    platform.appendChild(border);
+
+    // The car entity
+    const carEntity = document.createElement('a-entity');
+    carEntity.setAttribute('position', '0 0.13 0');
+    carEntity.setAttribute('rotation', '0 90 0');
+    carEntity.setAttribute('lowpoly-car', {
+      bodyColor: car.color,
+      accentColor: car.accent,
+      rimColor: car.rim,
+      stripeColor: car.stripe || '',
+      hasSpoiler: car.spoiler,
+      spoilerHeight: car.sH || 0.4,
+      hasWhaleTail: car.whaleTail,
+      isHatchback: car.hatch,
+      isLowSport: car.lowSport || false,
+      bodyLength: car.bL,
+      bodyWidth: car.bW,
+      bodyHeight: car.bH,
+      cabinLength: car.cL,
+      cabinHeight: car.cH,
+      cabinOffset: car.cO
+    });
+    platform.appendChild(carEntity);
+
+    // Spot light per car
+    const spot = document.createElement('a-light');
+    spot.setAttribute('type', 'spot');
+    spot.setAttribute('color', '#ffffff');
+    spot.setAttribute('intensity', '1.5');
+    spot.setAttribute('position', '0 6 0');
+    spot.setAttribute('rotation', '-90 0 0');
+    spot.setAttribute('angle', '35');
+    spot.setAttribute('penumbra', '0.6');
+    platform.appendChild(spot);
+
+    // Small point light beneath for glow
+    const glow = document.createElement('a-light');
+    glow.setAttribute('type', 'point');
+    glow.setAttribute('color', '#ff6a00');
+    glow.setAttribute('intensity', '0.15');
+    glow.setAttribute('distance', '4');
+    glow.setAttribute('position', '0 0.3 0');
+    platform.appendChild(glow);
+
+    // ---- DESCRIPTIVE PLAQUE ----
+    const plaque = document.createElement('a-entity');
+    plaque.setAttribute('position', '0 1.1 -1.9');
+
+    const plaqueBack = document.createElement('a-plane');
+    plaqueBack.setAttribute('width', '3.2');
+    plaqueBack.setAttribute('height', '1.1');
+    plaqueBack.setAttribute('color', '#111111');
+    plaqueBack.setAttribute('material', 'roughness: 0.5');
+    plaque.appendChild(plaqueBack);
+
+    const plaqueBorder = document.createElement('a-plane');
+    plaqueBorder.setAttribute('width', '3.3');
+    plaqueBorder.setAttribute('height', '1.2');
+    plaqueBorder.setAttribute('color', '#ff6a00');
+    plaqueBorder.setAttribute('material', 'roughness: 0.3');
+    plaqueBorder.setAttribute('position', '0 0 -0.005');
+    plaque.appendChild(plaqueBorder);
+
+    // Title
+    const title = document.createElement('a-text');
+    title.setAttribute('value', `${car.name} (${car.year})`);
+    title.setAttribute('align', 'center');
+    title.setAttribute('position', '0 0.3 0.02');
+    title.setAttribute('width', '3');
+    title.setAttribute('color', '#ff6a00');
+    title.setAttribute('font', 'mozillavr');
+    plaque.appendChild(title);
+
+    // Description
+    const desc = document.createElement('a-text');
+    desc.setAttribute('value', car.desc);
+    desc.setAttribute('align', 'center');
+    desc.setAttribute('position', '0 -0.1 0.02');
+    desc.setAttribute('width', '2.5');
+    desc.setAttribute('color', '#e0e0e0');
+    plaque.appendChild(desc);
+
+    platform.appendChild(plaque);
+    scene.appendChild(platform);
+  });
+});
+</script>
+
+<!-- CÁMARA Y CONTROLES VR -->
+<a-entity position="0 1.6 28">
+  <a-camera look-controls wasd-controls="acceleration: 100">
+    <a-cursor color="#ff6a00" fuse="false"></a-cursor>
+  </a-camera>
+</a-entity>
+<a-entity laser-controls="hand: left"></a-entity>
+<a-entity laser-controls="hand: right"></a-entity>
+
+<!-- ============ ILUMINACIÓN DE TALLER ============ -->
+<a-light type="ambient" color="#303030" intensity="1.2"></a-light>
+
+<!-- Luces de techo tipo nave industrial (fluorescentes) - Fila 1 -->
+<a-light type="point" intensity="0.4" position="-10 8 -8" distance="20" color="#fff"></a-light>
+<a-light type="point" intensity="0.4" position="0 8 -8" distance="20" color="#fff"></a-light>
+<a-light type="point" intensity="0.4" position="10 8 -8" distance="20" color="#fff"></a-light>
+<!-- Fila 2 -->
+<a-light type="point" intensity="0.4" position="-10 8 0" distance="20" color="#fff"></a-light>
+<a-light type="point" intensity="0.4" position="0 8 0" distance="20" color="#ffe8cc"></a-light>
+<a-light type="point" intensity="0.4" position="10 8 0" distance="20" color="#fff"></a-light>
+<!-- Fila 3 -->
+<a-light type="point" intensity="0.4" position="-10 8 8" distance="20" color="#fff"></a-light>
+<a-light type="point" intensity="0.4" position="0 8 8" distance="20" color="#fff"></a-light>
+<a-light type="point" intensity="0.4" position="10 8 8" distance="20" color="#fff"></a-light>
+<!-- Fila 4 -->
+<a-light type="point" intensity="0.4" position="-10 8 16" distance="20" color="#ffe8cc"></a-light>
+<a-light type="point" intensity="0.4" position="0 8 16" distance="20" color="#fff"></a-light>
+<a-light type="point" intensity="0.4" position="10 8 16" distance="20" color="#fff"></a-light>
+
+<!-- Directional key light -->
+<a-light type="directional" intensity="0.3" position="5 10 5" color="#ffffff"></a-light>
+
+<!-- Lámparas de techo visibles (carcasas) -->
+<a-entity id="ceiling-lamps">
+  <!-- Las lámparas colgantes tipo taller -->
+  <a-box position="-10 7.8 -8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="0 7.8 -8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="10 7.8 -8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="-10 7.8 0" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="0 7.8 0" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="10 7.8 0" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="-10 7.8 8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="0 7.8 8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="10 7.8 8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="-10 7.8 16" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="0 7.8 16" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+  <a-box position="10 7.8 16" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+</a-entity>
+
+<!-- ============ ARQUITECTURA ============ -->
+
+<!-- SUELO MODULAR DE COCHERA -->
+<!-- Centro gris/negro -->
+<a-plane rotation="-90 0 0" position="0 0 5" width="32" height="36" color="#1a1a1a" material="roughness: 0.15; metalness: 0.6"></a-plane>
+<!-- Bordes naranja izquierdo -->
+<a-plane rotation="-90 0 0" position="-18 0.005 5" width="4" height="36" color="#ff6a00" material="roughness: 0.4; metalness: 0.3"></a-plane>
+<!-- Bordes naranja derecho -->
+<a-plane rotation="-90 0 0" position="18 0.005 5" width="4" height="36" color="#ff6a00" material="roughness: 0.4; metalness: 0.3"></a-plane>
+<!-- Borde naranja frontal -->
+<a-plane rotation="-90 0 0" position="0 0.005 -13" width="40" height="2" color="#ff6a00" material="roughness: 0.4; metalness: 0.3"></a-plane>
+<!-- Borde naranja trasero -->
+<a-plane rotation="-90 0 0" position="0 0.005 25" width="40" height="4" color="#ff6a00" material="roughness: 0.4; metalness: 0.3"></a-plane>
+<!-- Lineas del suelo tipo parking -->
+<a-plane rotation="-90 0 0" position="-4.5 0.01 5" width="0.08" height="34" color="#ff6a00" material="opacity: 0.5"></a-plane>
+<a-plane rotation="-90 0 0" position="4.5 0.01 5" width="0.08" height="34" color="#ff6a00" material="opacity: 0.5"></a-plane>
+<a-plane rotation="-90 0 0" position="-13.5 0.01 5" width="0.08" height="34" color="#ff6a00" material="opacity: 0.5"></a-plane>
+<a-plane rotation="-90 0 0" position="13.5 0.01 5" width="0.08" height="34" color="#ff6a00" material="opacity: 0.5"></a-plane>
+
+<!-- TECHO -->
+<a-plane rotation="90 0 0" position="0 8 5" width="42" height="40" color="#1c1c1c" material="roughness: 1"></a-plane>
+
+<!-- PAREDES BLANCAS/LUMINOSAS -->
+<!-- Pared frontal (blanca suave) -->
+<a-box position="0 4 -14" width="42" height="8" depth="0.5" color="#e8e8e8" material="roughness: 0.7"></a-box>
+<!-- Pared trasera (blanca suave) -->
+<a-box position="0 4 27" width="42" height="8" depth="0.5" color="#f0f0f0" material="roughness: 0.7"></a-box>
+<!-- Pared derecha (blanca suave) -->
+<a-box position="21 4 5" width="0.5" height="8" depth="42" color="#e8e8e8" material="roughness: 0.7"></a-box>
+
+<!-- ============ PARED GRAFFITI (Pared Izquierda) ============ -->
+<a-box position="-21 4 5" width="0.5" height="8" depth="42" color="#ddd" material="roughness: 0.8"></a-box>
+
+<!-- Graffiti: Formas geométricas coloridas, letras urbanas, salpicaduras abstractas -->
+<!-- Fondo splash zones -->
+<a-plane position="-20.7 4.5 -4" rotation="0 90 0" width="8" height="4" color="#ff3366" material="opacity: 0.7; transparent: true"></a-plane>
+<a-plane position="-20.7 3.5 6" rotation="0 90 0" width="6" height="3" color="#00ccff" material="opacity: 0.6; transparent: true"></a-plane>
+<a-plane position="-20.7 5 14" rotation="0 90 0" width="7" height="3.5" color="#ffcc00" material="opacity: 0.6; transparent: true"></a-plane>
+
+<!-- Graffiti triangles -->
+<a-triangle position="-20.7 5.5 -2" rotation="0 90 0" vertex-a="0 1.5 0" vertex-b="-1.5 0 0" vertex-c="1.5 0 0" color="#33ff66" material="opacity: 0.8; transparent: true; side: double"></a-triangle>
+<a-triangle position="-20.7 3 10" rotation="0 90 0" vertex-a="0 2 0" vertex-b="-2 0 0" vertex-c="1 0 0" color="#ff6600" material="opacity: 0.7; transparent: true; side: double"></a-triangle>
+
+<!-- Graffiti circles / bubbles -->
+<a-circle position="-20.7 6 2" rotation="0 90 0" radius="1.2" color="#cc33ff" material="opacity: 0.6; transparent: true"></a-circle>
+<a-circle position="-20.7 2.5 -6" rotation="0 90 0" radius="0.8" color="#ff3366" material="opacity: 0.7; transparent: true"></a-circle>
+<a-circle position="-20.7 5.5 18" rotation="0 90 0" radius="1" color="#00ff99" material="opacity: 0.5; transparent: true"></a-circle>
+<a-circle position="-20.7 3 16" rotation="0 90 0" radius="0.6" color="#ff0066" material="opacity: 0.8; transparent: true"></a-circle>
+
+<!-- Graffiti stripes / drips -->
+<a-plane position="-20.7 2 -3" rotation="0 90 0" width="0.3" height="3" color="#ff3366" material="opacity: 0.7; transparent: true"></a-plane>
+<a-plane position="-20.7 2.5 1" rotation="0 90 0" width="0.2" height="2.5" color="#00ccff" material="opacity: 0.6; transparent: true"></a-plane>
+<a-plane position="-20.7 2 8" rotation="0 90 0" width="0.25" height="3.5" color="#ffcc00" material="opacity: 0.7; transparent: true"></a-plane>
+<a-plane position="-20.7 2.2 14" rotation="0 90 0" width="0.15" height="2" color="#33ff66" material="opacity: 0.6; transparent: true"></a-plane>
+
+<!-- Letras graffiti (textos urbanos estilizados) -->
+<a-text value="RALLY" position="-20.65 6.5 -5" rotation="0 90 0" width="14" color="#ffffff" font="mozillavr"></a-text>
+<a-text value="LEGENDS" position="-20.65 5.8 -4" rotation="0 90 0" width="12" color="#ffcc00" font="mozillavr"></a-text>
+<a-text value="WRC" position="-20.65 6 8" rotation="0 90 0" width="18" color="#ff3366" font="mozillavr"></a-text>
+<a-text value="TURBO" position="-20.65 4 12" rotation="0 90 0" width="10" color="#00ccff" font="mozillavr"></a-text>
+<a-text value="GROUP A" position="-20.65 3 -8" rotation="0 90 0" width="8" color="#33ff66" font="mozillavr"></a-text>
+<a-text value="80s 90s" position="-20.65 6.5 16" rotation="0 90 0" width="10" color="#cc33ff" font="mozillavr"></a-text>
+
+<!-- Graffiti splatter boxes -->
+<a-box position="-20.7 4 -9" rotation="0 90 35" width="2" height="0.8" depth="0.02" color="#ff6600" material="opacity: 0.5; transparent: true"></a-box>
+<a-box position="-20.7 5 20" rotation="0 90 -20" width="3" height="1" depth="0.02" color="#00ccff" material="opacity: 0.4; transparent: true"></a-box>
+
+<!-- ============ SEÑAL DE ENTRADA ============ -->
+<a-entity position="0 6.5 26">
+  <a-plane width="12" height="2" color="#111"></a-plane>
+  <a-plane width="12.2" height="2.2" color="#ff6a00" position="0 0 -0.02"></a-plane>
+  <a-text value="EXPOSICION DE CLASICOS DEL RALLY" align="center" position="0 0.2 0.02" width="10" color="#ff6a00" font="mozillavr"></a-text>
+  <a-text value="Coches de los 80s y 90s   |   Grupo A & WRC" align="center" position="0 -0.4 0.02" width="8" color="#e0e0e0"></a-text>
+</a-entity>
+
+</a-scene>
 </body>
 </html>
