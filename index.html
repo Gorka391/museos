@@ -2,87 +2,86 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Museo de Coches Clásicos en Realidad Virtual</title>
+  <title>Museo de Arte en Realidad Virtual Premium</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     body { margin: 0; padding: 0; background-color: #000; }
   </style>
 </head>
 <body>
-  <a-scene>
-
-    <!-- ASSETS -->
+  <a-scene ui="enabled: true">
+    
+    <!-- GESTIÓN DE RECURSOS -->
     <a-assets>
+      <!-- Texturas -->
       <img id="floor-texture" src="https://cdn.aframe.io/a-painter/images/floor.jpg">
       <img id="water-texture" src="https://cdn.aframe.io/a-painter/images/sky.jpg">
-
+      
       <!-- Coches clásicos -->
-      <img id="mustang" src="https://upload.wikimedia.org/wikipedia/commons/1/1e/1967_Ford_Mustang.jpg">
-      <img id="cadillac" src="https://upload.wikimedia.org/wikipedia/commons/3/3e/1959_Cadillac_Eldorado.jpg">
-      <img id="beetle" src="https://upload.wikimedia.org/wikipedia/commons/6/6d/VW_Beetle_1960.jpg">
-      <img id="porsche" src="https://upload.wikimedia.org/wikipedia/commons/9/92/Porsche_911_1964.jpg">
-      <img id="ferrari" src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Ferrari_250_GTO.jpg">
+      <img id="monalisa" src="https://upload.wikimedia.org/wikipedia/commons/1/1e/1967_Ford_Mustang.jpg">
+      <img id="starry" src="https://upload.wikimedia.org/wikipedia/commons/3/3e/1959_Cadillac_Eldorado.jpg">
+      <img id="wave" src="https://upload.wikimedia.org/wikipedia/commons/6/6d/VW_Beetle_1960.jpg">
+      <img id="pearl" src="https://upload.wikimedia.org/wikipedia/commons/9/92/Porsche_911_1964.jpg">
+      <img id="persistence" src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Ferrari_250_GTO.jpg">
     </a-assets>
 
     <!-- Cámara -->
     <a-entity position="0 1.6 8">
-      <a-camera wasd-controls="acceleration: 60">
+      <a-camera look-controls wasd-controls="acceleration: 60">
         <a-cursor></a-cursor>
       </a-camera>
     </a-entity>
 
     <!-- Luces -->
-    <a-light type="ambient" intensity="1"></a-light>
-    <a-light type="point" position="0 6 0"></a-light>
+    <a-light type="ambient" color="#303030" intensity="1.5"></a-light>
+    <a-light type="point" position="0 6 0" intensity="0.3"></a-light>
 
     <!-- Suelo -->
     <a-plane src="#floor-texture" rotation="-90 0 0" width="40" height="40"></a-plane>
 
     <!-- Paredes -->
-    <a-box position="0 4 -15" width="30" height="8" depth="0.5" color="#555"></a-box>
-    <a-box position="0 4 15" width="30" height="8" depth="0.5" color="#555"></a-box>
-    <a-box position="-15 4 0" width="0.5" height="8" depth="30" color="#777"></a-box>
-    <a-box position="15 4 0" width="0.5" height="8" depth="30" color="#777"></a-box>
+    <a-box position="0 4 -15" width="30" height="8" depth="0.5" color="#475569"></a-box>
+    <a-box position="0 4 15" width="30" height="8" depth="0.5" color="#475569"></a-box>
+    <a-box position="-15 4 0" width="0.5" height="8" depth="30" color="#64748b"></a-box>
+    <a-box position="15 4 0" width="0.5" height="8" depth="30" color="#64748b"></a-box>
 
-    <!-- CUADROS DE COCHES -->
-
-    <!-- Mustang -->
+    <!-- CUADRO 1 -->
     <a-entity position="0 2.8 -14.7">
-      <a-box width="2" height="2.8" depth="0.1" color="#333"></a-box>
-      <a-plane position="0 0 0.051" width="1.8" height="2.6" src="#mustang"></a-plane>
-      <a-text value="Ford Mustang\nAño: 1967\nMuscle car americano"
+      <a-box width="2" height="2.8" depth="0.1" color="#451a03"></a-box>
+      <a-plane position="0 0 0.051" width="1.8" height="2.6" src="#monalisa"></a-plane>
+      <a-text value="Ford Mustang\n\nAño: 1967\nMuscle car americano."
               align="center" position="0 -2 0.1" width="4"></a-text>
     </a-entity>
 
-    <!-- Cadillac -->
+    <!-- CUADRO 2 -->
     <a-entity position="-14.7 2.8 0" rotation="0 90 0">
-      <a-box width="4.4" height="3.2" depth="0.1" color="#333"></a-box>
-      <a-plane position="0 0 0.051" width="4.2" height="3" src="#cadillac"></a-plane>
-      <a-text value="Cadillac Eldorado\nAño: 1959\nLujo americano"
+      <a-box width="4.4" height="3.2" depth="0.1" color="#020617"></a-box>
+      <a-plane position="0 0 0.051" width="4.2" height="3" src="#starry"></a-plane>
+      <a-text value="Cadillac Eldorado\n\nAño: 1959\nLujo americano con aletas icónicas."
               align="center" position="0 -2 0.1" width="6"></a-text>
     </a-entity>
 
-    <!-- Beetle -->
+    <!-- CUADRO 3 -->
     <a-entity position="14.7 2.8 0" rotation="0 -90 0">
-      <a-box width="3.6" height="2.6" depth="0.1" color="#333"></a-box>
-      <a-plane position="0 0 0.051" width="3.4" height="2.4" src="#beetle"></a-plane>
-      <a-text value="Volkswagen Beetle\nAño: 1960\nCoche popular"
+      <a-box width="3.6" height="2.6" depth="0.1" color="#ca8a04"></a-box>
+      <a-plane position="0 0 0.051" width="3.4" height="2.4" src="#wave"></a-plane>
+      <a-text value="Volkswagen Beetle\n\nAño: 1960\nUno de los coches más vendidos."
               align="center" position="0 -2 0.1" width="5"></a-text>
     </a-entity>
 
-    <!-- Porsche -->
+    <!-- CUADRO 4 -->
     <a-entity position="-6 2.8 14.7" rotation="0 180 0">
-      <a-box width="1.8" height="2.2" depth="0.1" color="#333"></a-box>
-      <a-plane position="0 0 0.051" width="1.6" height="2" src="#porsche"></a-plane>
-      <a-text value="Porsche 911\nAño: 1964\nDeportivo icónico"
+      <a-box width="1.8" height="2.2" depth="0.1" color="#000"></a-box>
+      <a-plane position="0 0 0.051" width="1.6" height="2" src="#pearl"></a-plane>
+      <a-text value="Porsche 911\n\nAño: 1964\nDeportivo clásico atemporal."
               align="center" position="0 -2 0.1" width="4"></a-text>
     </a-entity>
 
-    <!-- Ferrari -->
+    <!-- CUADRO 5 -->
     <a-entity position="6 2.8 14.7" rotation="0 180 0">
-      <a-box width="2.4" height="1.8" depth="0.1" color="#333"></a-box>
-      <a-plane position="0 0 0.051" width="2.2" height="1.6" src="#ferrari"></a-plane>
-      <a-text value="Ferrari 250 GTO\nAño: 1962\nLeyenda del automovilismo"
+      <a-box width="2.4" height="1.8" depth="0.1" color="#854d0e"></a-box>
+      <a-plane position="0 0 0.051" width="2.2" height="1.6" src="#persistence"></a-plane>
+      <a-text value="Ferrari 250 GTO\n\nAño: 1962\nUno de los coches más caros del mundo."
               align="center" position="0 -2 0.1" width="4"></a-text>
     </a-entity>
 
