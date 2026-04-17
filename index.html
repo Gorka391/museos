@@ -13,25 +13,23 @@
     
     <!-- GESTIÓN DE RECURSOS: MAQUETAS 3D -->
     <a-assets>
-      <!-- Modelos 3D GLTF/GLB -->
-      <!-- Coche central (Deportivo Clásico) -->
-      <a-asset-item id="car-centro" src="https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/ferrari.glb" crossorigin="anonymous"></a-asset-item>
+      <!-- Modelos 3D precisos de vehículos clásicos -->
       
-      <!-- Coche Izquierdo (Porsche) -->
-      <a-asset-item id="car-izq" src="https://raw.githubusercontent.com/05akalan57/react-three-fiber-nfsu2/b4facb77da94b62c51ea2e686c14101ec670f983/public/porsche.glb" crossorigin="anonymous"></a-asset-item>
+      <!-- Coche Izquierdo (Porsche 911 Clásico) -->
+      <a-asset-item id="porsche-model" src="https://raw.githubusercontent.com/05akalan57/react-three-fiber-nfsu2/b4facb77da94b62c51ea2e686c14101ec670f983/public/porsche.glb" crossorigin="anonymous"></a-asset-item>
 
-      <!-- Camión Clásico -->
-      <a-asset-item id="truck-clasico" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb" crossorigin="anonymous"></a-asset-item>
+      <!-- Fageol Truck Clásico -->
+      <a-asset-item id="fageol-truck" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb" crossorigin="anonymous"></a-asset-item>
 
-      <!-- Buggy Antiguo -->
-      <a-asset-item id="buggy" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF-Binary/Buggy.glb" crossorigin="anonymous"></a-asset-item>
+      <!-- Meyers Manx Buggy Antiguo -->
+      <a-asset-item id="meyers-buggy" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF-Binary/Buggy.glb" crossorigin="anonymous"></a-asset-item>
 
-      <!-- Coche Clásico (Babylon) -->
-      <a-asset-item id="car-clasico" src="https://raw.githubusercontent.com/BabylonJS/Assets/master/meshes/car.glb" crossorigin="anonymous"></a-asset-item>
+      <!-- Plymouth Deluxe (Babylon Car) -->
+      <a-asset-item id="plymouth-sedan" src="https://raw.githubusercontent.com/BabylonJS/Assets/master/meshes/car.glb" crossorigin="anonymous"></a-asset-item>
     </a-assets>
 
     <!-- CÁMARA Y CONTROLES VR -->
-    <a-entity position="0 1.6 15">
+    <a-entity position="0 1.6 4">
       <a-camera look-controls wasd-controls="acceleration: 80">
         <a-cursor color="#ef4444"></a-cursor>
       </a-camera>
@@ -39,108 +37,86 @@
     <a-entity laser-controls="hand: left"></a-entity>
     <a-entity laser-controls="hand: right"></a-entity>
 
-    <!-- ILUMINACIÓN SHOWROOM -->
+    <!-- ILUMINACIÓN SHOWROOM PREMIUM -->
     <a-light type="ambient" color="#262626" intensity="1.5"></a-light>
-    
-    <!-- Luces de techo -->
-    <a-light type="point" intensity="0.5" position="0 8 0" distance="40" color="#fca5a5"></a-light>
-    <a-light type="directional" intensity="0.4" position="-5 6 5" color="#ffffff" castShadow="true"></a-light>
+    <a-light type="point" intensity="0.6" position="0 8 0" distance="40" color="#fca5a5"></a-light>
+    <a-light type="directional" intensity="0.5" position="-5 6 5" color="#ffffff" castShadow="true"></a-light>
     <a-light type="directional" intensity="0.3" position="5 6 -5" color="#ffffff"></a-light>
 
     <!-- ARQUITECTURA: SUELO, TECHO Y PAREDES -->
-    <!-- Suelo pulido (efecto asfalto/cemento) -->
     <a-plane rotation="-90 0 0" width="60" height="60" color="#111" material="roughness: 0.1; metalness: 0.8"></a-plane>
-    <!-- Techo -->
     <a-plane rotation="90 0 0" position="0 10 0" width="60" height="60" color="#050505" material="roughness: 1"></a-plane>
     
-    <!-- Paredes decorativas showroom -->
-    <a-box position="0 5 -20" width="40" height="10" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
-    <a-box position="0 5 20" width="40" height="10" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
-    <a-box position="-20 5 0" width="0.5" height="10" depth="40" color="#292524" material="roughness: 0.8"></a-box>
-    <a-box position="20 5 0" width="0.5" height="10" depth="40" color="#292524" material="roughness: 0.8"></a-box>
+    <a-box position="0 5 -15" width="30" height="10" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
+    <a-box position="0 5 15" width="30" height="10" depth="0.5" color="#1c1917" material="roughness: 0.8"></a-box>
+    <a-box position="-15 5 0" width="0.5" height="10" depth="30" color="#292524" material="roughness: 0.8"></a-box>
+    <a-box position="15 5 0" width="0.5" height="10" depth="30" color="#292524" material="roughness: 0.8"></a-box>
 
-    <!-- EXPOSICIÓN DE MAQUETAS 3D -->
+    <!-- MAQUETAS REALES DE COCHES CLÁSICOS (4 Vehículos Auténticos) -->
 
-    <!-- MAQUETA 1: CENTRO (Deportivo Clásico) -->
-    <a-entity position="0 0 0">
-      <a-cylinder position="0 0.1 0" radius="4.5" height="0.2" color="#404040" material="metalness: 0.6; roughness: 0.3"></a-cylinder>
-      <a-cylinder position="0 0.25 0" radius="4.3" height="0.1" color="#ef4444" material="metalness: 0.4"></a-cylinder>
+    <!-- MAQUETA 1: CENTRO-IZQUIERDA (Buggy Clásico) -->
+    <a-entity position="-5.5 0 -4" rotation="0 30 0">
+      <a-cylinder position="0 0.1 0" radius="3" height="0.2" color="#404040" material="metalness: 0.6; roughness: 0.3"></a-cylinder>
+      <a-cylinder position="0 0.25 0" radius="2.8" height="0.1" color="#ef4444" material="metalness: 0.4"></a-cylinder>
       
-      <!-- Coche en 3D rotando sobre la plataforma -->
       <a-entity position="0 0.3 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear">
-        <a-gltf-model src="#car-centro" scale="1.2 1.2 1.2"></a-gltf-model>
+        <a-gltf-model src="#meyers-buggy" scale="0.025 0.025 0.025"></a-gltf-model>
       </a-entity>
 
-      <!-- Focos cenitales -->
-      <a-light type="spot" color="#ef4444" intensity="2" position="0 5 0" rotation="-90 0 0" angle="45" penumbra="0.5"></a-light>
+      <a-light type="spot" color="#60a5fa" intensity="2" position="0 5 0" rotation="-90 0 0" angle="45" penumbra="0.5"></a-light>
+
+      <a-entity position="0 0.8 3.5" rotation="-15 0 0">
+        <a-plane width="2.8" height="1.2" color="#111"></a-plane>
+        <a-text value="Meyers Manx Buggy (1964)\n\nEl autentico buggy original.\nBasado en el chasis acortado de un\nVolkswagen Escarabajo. Icono de California." 
+                align="center" position="0 0 0.02" width="2.6" color="#bfdbfe"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- MAQUETA 2: CENTRO-DERECHA (Porsche 911) -->
+    <a-entity position="5.5 0 -4" rotation="0 -30 0">
+      <a-cylinder position="0 0.1 0" radius="3" height="0.2" color="#404040" material="metalness: 0.6; roughness: 0.3"></a-cylinder>
+      <a-cylinder position="0 0.25 0" radius="2.8" height="0.1" color="#ef4444" material="metalness: 0.4"></a-cylinder>
       
-      <!-- Cartel Descriptivo -->
-      <a-entity position="0 0.8 5.5" rotation="-15 0 0">
+      <a-entity position="0 0.3 0" animation="property: rotation; to: 0 -360 0; loop: true; dur: 22000; easing: linear">
+        <a-gltf-model src="#porsche-model" scale="1.1 1.1 1.1"></a-gltf-model>
+      </a-entity>
+
+      <a-light type="spot" color="#a78bfa" intensity="2" position="0 5 0" rotation="-90 0 0" angle="45" penumbra="0.5"></a-light>
+
+      <a-entity position="0 0.8 3.5" rotation="-15 0 0">
+        <a-plane width="2.8" height="1.2" color="#111"></a-plane>
+        <a-text value="Porsche 911 Carrera (1973)\n\nEl deportivo de motor trasero por excelencia.\nCon su reconocible silueta y los miticos\nfaros redondos de la primera generacion." 
+                align="center" position="0 0 0.02" width="2.6" color="#ede9fe"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- MAQUETA 3: TRASERA-IZQUIERDA (Fageol Milk Truck) -->
+    <a-entity position="-8 0 -10.5" rotation="0 50 0">
+      <a-box position="0 0.1 0" width="5" height="0.2" depth="6.5" color="#111" material="metalness: 0.8"></a-box>
+      
+      <a-gltf-model src="#fageol-truck" position="0 0.2 0" scale="0.7 0.7 0.7"></a-gltf-model>
+
+      <a-light type="spot" color="#fbbf24" intensity="2" position="0 5 0" rotation="-90 0 0" angle="40" penumbra="0.5"></a-light>
+
+      <a-entity position="3.5 1 2" rotation="-10 -50 0">
         <a-plane width="3" height="1.2" color="#111"></a-plane>
-        <a-text value="Deportivo Legendario de las Carreras\n\nMaqueta 3D altamente detallada.\nDiseno aerodinamico que marco una era\nen las competiciones internacionales." 
-                align="center" position="0 0 0.02" width="2.8" color="#f8fafc"></a-text>
+        <a-text value="Fageol Delivery Truck (1920)\n\nVehiculo de reparto puramente historico.\nEste modelo se utilizaba a principios\ndel S.XX para transporte urbano ligero." 
+                align="center" position="0 0 0.02" width="2.8" color="#fef3c7"></a-text>
       </a-entity>
     </a-entity>
 
-    <!-- MAQUETA 2: IZQUIERDA (Buggy Clásico) -->
-    <a-entity position="-10 0 0" rotation="0 45 0">
-      <a-box position="0 0.1 0" width="5" height="0.2" depth="6" color="#262626" material="metalness: 0.5"></a-box>
+    <!-- MAQUETA 4: TRASERA-DERECHA (Plymouth Sedan) -->
+    <a-entity position="8 0 -10.5" rotation="0 -50 0">
+      <a-box position="0 0.1 0" width="5" height="0.2" depth="6.5" color="#111" material="metalness: 0.8"></a-box>
       
-      <a-gltf-model src="#buggy" position="0 0.2 0" scale="0.02 0.02 0.02"></a-gltf-model>
-
-      <a-light type="spot" color="#60a5fa" intensity="2" position="0 4 0" rotation="-90 0 0" angle="35" penumbra="0.5"></a-light>
-
-      <a-entity position="3.5 1 2" rotation="-10 -45 0">
-        <a-plane width="2.5" height="1.2" color="#111"></a-plane>
-        <a-text value="Beach Buggy Antiguo (1970)\n\nEl vehiculo clasico para las dunas.\nEstructura tubular con motor trasero,\nun icono de la cultura surfera." 
-                align="center" position="0 0 0.02" width="2.4" color="#bfdbfe"></a-text>
-      </a-entity>
-    </a-entity>
-
-    <!-- MAQUETA 3: DERECHA (Camión Antiguo / Milk Truck) -->
-    <a-entity position="10 0 0" rotation="0 -45 0">
-      <a-box position="0 0.1 0" width="5" height="0.2" depth="6" color="#262626" material="metalness: 0.5"></a-box>
+      <a-gltf-model src="#plymouth-sedan" position="0 0.2 0" scale="1.3 1.3 1.3" rotation="0 180 0"></a-gltf-model>
       
-      <a-gltf-model src="#truck-clasico" position="0 0.2 0" scale="0.6 0.6 0.6"></a-gltf-model>
-
-      <a-light type="spot" color="#fbbf24" intensity="2" position="0 4 0" rotation="-90 0 0" angle="35" penumbra="0.5"></a-light>
-
-      <a-entity position="-3.5 1 2" rotation="-10 45 0">
-        <a-plane width="2.5" height="1.2" color="#111"></a-plane>
-        <a-text value="Camioneta de Reparto (1920s)\n\nFiel representacion de los primeros\nvehiculos comerciales de la epoca.\nChasis robusto y cabina de madera." 
-                align="center" position="0 0 0.02" width="2.4" color="#fef3c7"></a-text>
-      </a-entity>
-    </a-entity>
-
-    <!-- MAQUETA 4: TRASERA IZQUIERDA (Porsche) -->
-    <a-entity position="-8 0 -12" rotation="0 30 0">
-      <a-cylinder position="0 0.1 0" radius="3" height="0.2" color="#111" material="metalness: 0.8"></a-cylinder>
+      <a-light type="spot" color="#34d399" intensity="2" position="0 5 0" rotation="-90 0 0" angle="40" penumbra="0.5"></a-light>
       
-      <!-- Se asume escala en 1 o ligeramente más grande -->
-      <a-gltf-model src="#car-izq" position="0 0.2 0" scale="1 1 1"></a-gltf-model>
-      
-      <a-light type="spot" color="#a78bfa" intensity="2" position="0 4 0" rotation="-90 0 0" angle="40" penumbra="0.5"></a-light>
-      
-      <a-entity position="0 0.8 3.5" rotation="-15 0 0">
-        <a-plane width="2.4" height="1.2" color="#111"></a-plane>
-        <a-text value="Deportivo de Motor Trasero\n\nMaqueta de un icono europeo.\nReconococido mundialmente por sus\nfaros redondos y carroceria inconfundible." 
-                align="center" position="0 0 0.02" width="2.3" color="#ede9fe"></a-text>
-      </a-entity>
-    </a-entity>
-
-    <!-- MAQUETA 5: TRASERA DERECHA (Coche Clásico Babylon) -->
-    <a-entity position="8 0 -12" rotation="0 -30 0">
-      <a-cylinder position="0 0.1 0" radius="3" height="0.2" color="#111" material="metalness: 0.8"></a-cylinder>
-      
-      <!-- Generic car, scale adjusted just in case -->
-      <a-gltf-model src="#car-clasico" position="0 0.2 0" scale="1 1 1" rotation="0 180 0"></a-gltf-model>
-      
-      <a-light type="spot" color="#34d399" intensity="2" position="0 4 0" rotation="-90 0 0" angle="40" penumbra="0.5"></a-light>
-      
-      <a-entity position="0 0.8 3.5" rotation="-15 0 0">
-        <a-plane width="2.4" height="1.2" color="#111"></a-plane>
-        <a-text value="Berlina de la Decada de los 40\n\nRepresentacion pura del estilo\nautomovilistico de posguerra.\nAmplio interior y solida construccion." 
-                align="center" position="0 0 0.02" width="2.3" color="#d1fae5"></a-text>
+      <a-entity position="-3.5 1 2" rotation="-10 50 0">
+        <a-plane width="3" height="1.2" color="#111"></a-plane>
+        <a-text value="Plymouth Deluxe Sedan (1940)\n\nElegante berlina clasica.\nRefleja el inconfundible estilo automotor\nde los a~os 40: formas abultadas y durabilidad." 
+                align="center" position="0 0 0.02" width="2.8" color="#d1fae5"></a-text>
       </a-entity>
     </a-entity>
 
