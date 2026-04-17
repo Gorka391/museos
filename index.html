@@ -2,680 +2,90 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Museo de Arte — Galería Infinita VR</title>
+  <title>Museo de Coches Clásicos en Realidad Virtual</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cinzel+Decorative:wght@400;700&family=Raleway:wght@200;300;400&display=swap');
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #000; overflow: hidden; font-family: 'Raleway', sans-serif; }
-
-    /* ══════════════════════════════════
-       PANTALLA DE CARGA
-    ══════════════════════════════════ */
-    #loading-screen {
-      position: fixed; inset: 0; z-index: 9999;
-      background: radial-gradient(ellipse at 50% 40%, #1a0a00 0%, #000 100%);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 2rem;
-      transition: opacity 1.2s ease, visibility 1.2s ease;
-    }
-    #loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-    .loading-logo {
-      font-family: 'Cinzel Decorative', serif;
-      font-size: clamp(1.4rem, 4vw, 2.8rem);
-      color: #d4a853;
-      letter-spacing: 0.25em;
-      text-align: center;
-      text-shadow: 0 0 40px rgba(212, 168, 83, 0.5);
-      animation: logoGlow 2s ease-in-out infinite alternate;
-    }
-    @keyframes logoGlow {
-      from { text-shadow: 0 0 20px rgba(212,168,83,0.3); }
-      to   { text-shadow: 0 0 60px rgba(212,168,83,0.9), 0 0 100px rgba(212,168,83,0.3); }
-    }
-    .loading-subtitle {
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-size: clamp(0.9rem, 2vw, 1.2rem);
-      color: #8b7355;
-      letter-spacing: 0.3em;
-    }
-    .loading-bar-wrap {
-      width: min(320px, 80vw);
-      height: 2px;
-      background: rgba(212,168,83,0.15);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .loading-bar {
-      height: 100%; width: 0;
-      background: linear-gradient(90deg, #8b6020, #d4a853, #f0d080, #d4a853);
-      border-radius: 99px;
-      animation: barFill 3s cubic-bezier(.4,0,.2,1) forwards;
-    }
-    @keyframes barFill { to { width: 100%; } }
-    .loading-hint {
-      font-size: 0.72rem;
-      color: #4a3f2f;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-    }
-    .ornament { color: #d4a853; font-size: 1.4rem; opacity: 0.6; }
-
-    /* ══════════════════════════════════
-       HUD SUPERIOR
-    ══════════════════════════════════ */
-    #hud {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      padding: 1.2rem 2rem;
-      display: flex; align-items: center; justify-content: space-between;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 1s ease 3.5s;
-    }
-    #hud.visible { opacity: 1; }
-    .hud-title {
-      font-family: 'Cinzel Decorative', serif;
-      font-size: clamp(0.7rem, 1.8vw, 1rem);
-      color: #d4a853;
-      letter-spacing: 0.2em;
-    }
-    .hud-sub {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 0.75rem;
-      color: #7a6545;
-      letter-spacing: 0.15em;
-      font-style: italic;
-    }
-    .hud-controls {
-      display: flex; gap: 1.5rem; align-items: center;
-    }
-    .hud-key {
-      display: flex; align-items: center; gap: 0.4rem;
-      font-size: 0.65rem; color: #6b5c40; letter-spacing: 0.1em;
-    }
-    .key-badge {
-      background: rgba(212,168,83,0.15);
-      border: 1px solid rgba(212,168,83,0.3);
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-size: 0.6rem;
-      color: #d4a853;
-    }
-
-    /* ══════════════════════════════════
-       PANEL DE OBRA (HOVER INFO)
-    ══════════════════════════════════ */
-    #artwork-panel {
-      position: fixed; bottom: 2rem; left: 50%;
-      transform: translateX(-50%) translateY(120%);
-      z-index: 100;
-      background: rgba(10, 7, 3, 0.92);
-      border: 1px solid rgba(212, 168, 83, 0.35);
-      border-radius: 2px;
-      padding: 1.2rem 2rem;
-      min-width: 280px; max-width: 420px;
-      text-align: center;
-      backdrop-filter: blur(12px);
-      transition: transform 0.4s cubic-bezier(.34,1.56,.64,1);
-      pointer-events: none;
-    }
-    #artwork-panel.visible {
-      transform: translateX(-50%) translateY(0);
-    }
-    .panel-title {
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 0.95rem;
-      color: #d4a853;
-      margin-bottom: 0.3rem;
-    }
-    .panel-meta {
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-size: 0.85rem;
-      color: #9e8a68;
-      margin-bottom: 0.6rem;
-    }
-    .panel-desc {
-      font-size: 0.72rem;
-      color: #6b5c40;
-      line-height: 1.7;
-      letter-spacing: 0.03em;
-    }
-    .panel-divider {
-      width: 40px; height: 1px;
-      background: linear-gradient(90deg, transparent, #d4a853, transparent);
-      margin: 0.6rem auto;
-    }
-
-    /* ══════════════════════════════════
-       MINIBRÚJULA
-    ══════════════════════════════════ */
-    #compass {
-      position: fixed; bottom: 2rem; right: 2rem; z-index: 100;
-      width: 52px; height: 52px;
-      border-radius: 50%;
-      border: 1px solid rgba(212,168,83,0.3);
-      background: rgba(10,7,3,0.8);
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 0.7rem;
-      color: #d4a853;
-      letter-spacing: 0.05em;
-      backdrop-filter: blur(8px);
-      opacity: 0;
-      transition: opacity 1s ease 3.5s;
-    }
-    #compass.visible { opacity: 1; }
-
-    /* Partículas flotantes de fondo */
-    #particles-bg {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    }
+    body { margin: 0; padding: 0; background-color: #000; }
   </style>
 </head>
 <body>
+  <a-scene>
 
-<!-- ══════════════════════════════════
-     PANTALLA DE CARGA
-══════════════════════════════════ -->
-<div id="loading-screen">
-  <div class="ornament">✦</div>
-  <div class="loading-logo">GALERÍA INFINITA</div>
-  <div class="loading-subtitle">Museo de Arte en Realidad Virtual</div>
-  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
-  <div class="loading-hint">Preparando la experiencia…</div>
-  <div class="ornament" style="transform:rotate(180deg)">✦</div>
-</div>
+    <!-- ASSETS -->
+    <a-assets>
+      <img id="floor-texture" src="https://cdn.aframe.io/a-painter/images/floor.jpg">
+      <img id="water-texture" src="https://cdn.aframe.io/a-painter/images/sky.jpg">
 
-<!-- HUD -->
-<div id="hud">
-  <div>
-    <div class="hud-title">GALERÍA INFINITA</div>
-    <div class="hud-sub">Grandes Maestros del Arte Universal</div>
-  </div>
-  <div class="hud-controls">
-    <div class="hud-key"><span class="key-badge">W A S D</span> Mover</div>
-    <div class="hud-key"><span class="key-badge">Ratón</span> Mirar</div>
-    <div class="hud-key"><span class="key-badge">Click</span> Info</div>
-  </div>
-</div>
+      <!-- Coches clásicos -->
+      <img id="mustang" src="https://upload.wikimedia.org/wikipedia/commons/1/1e/1967_Ford_Mustang.jpg">
+      <img id="cadillac" src="https://upload.wikimedia.org/wikipedia/commons/3/3e/1959_Cadillac_Eldorado.jpg">
+      <img id="beetle" src="https://upload.wikimedia.org/wikipedia/commons/6/6d/VW_Beetle_1960.jpg">
+      <img id="porsche" src="https://upload.wikimedia.org/wikipedia/commons/9/92/Porsche_911_1964.jpg">
+      <img id="ferrari" src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Ferrari_250_GTO.jpg">
+    </a-assets>
 
-<!-- Panel de obra -->
-<div id="artwork-panel">
-  <div class="panel-title" id="panel-title">—</div>
-  <div class="panel-divider"></div>
-  <div class="panel-meta" id="panel-meta">—</div>
-  <div class="panel-desc" id="panel-desc">—</div>
-</div>
-
-<!-- Brújula -->
-<div id="compass">N</div>
-
-<!-- ══════════════════════════════════
-     ESCENA A-FRAME
-══════════════════════════════════ -->
-<a-scene
-  renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
-  shadow="type: pcfsoft"
-  fog="type: exponential; color: #0a0602; density: 0.018"
-  vr-mode-ui="enabled: true"
->
-
-  <!-- ══ RECURSOS ══ -->
-  <a-assets timeout="15000">
-    <img id="floor-tex"   src="https://cdn.aframe.io/a-painter/images/floor.jpg" crossorigin="anonymous">
-    <img id="water-tex"   src="https://cdn.aframe.io/a-painter/images/sky.jpg" crossorigin="anonymous">
-
-    <!-- Obras maestras -->
-    <img id="monalisa"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/687px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg" crossorigin="anonymous">
-    <img id="starry"      src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg" crossorigin="anonymous">
-    <img id="wave"        src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Great_Wave_off_Kanagawa.jpg/1200px-The_Great_Wave_off_Kanagawa.jpg" crossorigin="anonymous">
-    <img id="pearl"       src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Meisje_met_de_parel.jpg/800px-Meisje_met_de_parel.jpg" crossorigin="anonymous">
-    <img id="persistence" src="https://upload.wikimedia.org/wikipedia/en/thumb/d/dd/The_Persistence_of_Memory.jpg/800px-The_Persistence_of_Memory.jpg" crossorigin="anonymous">
-    <img id="creation"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg/1200px-Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg" crossorigin="anonymous">
-    <img id="scream"      src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Edvard_Munch%2C_1893%2C_The_Scream%2C_oil%2C_tempera_and_pastel_on_cardboard%2C_91_x_73_cm%2C_National_Gallery_of_Norway.jpg/800px-Edvard_Munch%2C_1893%2C_The_Scream%2C_oil%2C_tempera_and_pastel_on_cardboard%2C_91_x_73_cm%2C_National_Gallery_of_Norway.jpg" crossorigin="anonymous">
-    <img id="liberty"     src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Eug%C3%A8ne_Delacroix_-_La_libert%C3%A9_guidant_le_peuple.jpg/1200px-Eug%C3%A8ne_Delacroix_-_La_libert%C3%A9_guidant_le_peuple.jpg" crossorigin="anonymous">
-  </a-assets>
-
-  <!-- ══ CÁMARA Y CONTROLES ══ -->
-  <a-entity id="rig" position="0 0 10">
-    <a-camera
-      look-controls="pointerLockEnabled: true"
-      wasd-controls="acceleration: 80; fly: false"
-      near="0.1" far="100"
-    >
-      <a-cursor
-        fuse="false"
-        raycaster="objects: .artwork"
-        color="#d4a853"
-        geometry="primitive: ring; radiusInner: 0.006; radiusOuter: 0.011"
-        material="color: #d4a853; shader: flat; opacity: 0.9"
-        animation__click="property: scale; startEvents: click; from: 1.5 1.5 1.5; to: 1 1 1; dur: 200"
-      ></a-cursor>
-    </a-camera>
-  </a-entity>
-
-  <!-- Mandos VR -->
-  <a-entity laser-controls="hand: left"  raycaster="objects: .artwork"></a-entity>
-  <a-entity laser-controls="hand: right" raycaster="objects: .artwork"></a-entity>
-
-  <!-- ══ SKY ══ -->
-  <a-sky color="#04020a"></a-sky>
-
-  <!-- ══ ILUMINACIÓN ══ -->
-  <a-light type="ambient"  color="#1a1008" intensity="3"></a-light>
-  <!-- Cúpula central cálida -->
-  <a-light type="point" intensity="0.6" position="0 7 0"   distance="30" color="#c8942a" decay="2"></a-light>
-  <!-- Luces perimetrales frescas -->
-  <a-light type="point" intensity="0.25" position="-12 6 -12" distance="20" color="#b0c8d4" decay="2"></a-light>
-  <a-light type="point" intensity="0.25" position=" 12 6 -12" distance="20" color="#b0c8d4" decay="2"></a-light>
-  <a-light type="point" intensity="0.25" position="-12 6  12" distance="20" color="#b0c8d4" decay="2"></a-light>
-  <a-light type="point" intensity="0.25" position=" 12 6  12" distance="20" color="#b0c8d4" decay="2"></a-light>
-
-  <!-- ══════════════════════
-       ARQUITECTURA
-  ══════════════════════ -->
-
-  <!-- Suelo de mármol oscuro con veta -->
-  <a-plane id="floor"
-    src="#floor-tex" rotation="-90 0 0"
-    width="42" height="42" repeat="12 12"
-    material="roughness:0.4; metalness:0.35; color:#2a1f12"
-  ></a-plane>
-
-  <!-- Techo con moldura central -->
-  <a-plane rotation="90 0 0" position="0 8.5 0" width="42" height="42" color="#0a0704" material="roughness:1"></a-plane>
-  <!-- Moldura de techo (cinturón dorado) -->
-  <a-box position="0 8.3 0" width="42" height="0.12" depth="42" color="#2c1f0a" material="roughness:0.5; metalness:0.6"></a-box>
-  <!-- Medallón central del techo -->
-  <a-torus position="0 8.45 0" rotation="90 0 0" radius="3" radius-tubular="0.08" color="#d4a853" material="roughness:0.3; metalness:0.8"></a-torus>
-  <a-torus position="0 8.45 0" rotation="90 0 0" radius="5" radius-tubular="0.06" color="#8b6820" material="roughness:0.4; metalness:0.7"></a-torus>
-
-  <!-- PAREDES PRINCIPALES (con zócalo y cornisa) -->
-  <!-- Pared Norte (-Z) -->
-  <a-box position="0 4.25 -16" width="32" height="8.5" depth="0.6" color="#1e1510" material="roughness:0.85"></a-box>
-  <!-- Pared Sur (+Z) -->
-  <a-box position="0 4.25  16" width="32" height="8.5" depth="0.6" color="#1e1510" material="roughness:0.85"></a-box>
-  <!-- Pared Oeste (-X) -->
-  <a-box position="-16 4.25 0" width="0.6" height="8.5" depth="32" color="#201610" material="roughness:0.85"></a-box>
-  <!-- Pared Este (+X) -->
-  <a-box position=" 16 4.25 0" width="0.6" height="8.5" depth="32" color="#201610" material="roughness:0.85"></a-box>
-
-  <!-- Zócalos decorativos (franjas doradas bajas) -->
-  <a-box position="0 0.3 -15.7"   width="32" height="0.5" depth="0.15" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-box>
-  <a-box position="0 0.3  15.7"   width="32" height="0.5" depth="0.15" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-box>
-  <a-box position="-15.7 0.3 0"  width="0.15" height="0.5" depth="32" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-box>
-  <a-box position=" 15.7 0.3 0"  width="0.15" height="0.5" depth="32" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-box>
-
-  <!-- Cornisas superiores -->
-  <a-box position="0 8.1 -15.7"   width="32.4" height="0.4" depth="0.5" color="#2c1f0a" material="roughness:0.5;metalness:0.5"></a-box>
-  <a-box position="0 8.1  15.7"   width="32.4" height="0.4" depth="0.5" color="#2c1f0a" material="roughness:0.5;metalness:0.5"></a-box>
-  <a-box position="-15.7 8.1 0"  width="0.5" height="0.4" depth="32.4" color="#2c1f0a" material="roughness:0.5;metalness:0.5"></a-box>
-  <a-box position=" 15.7 8.1 0"  width="0.5" height="0.4" depth="32.4" color="#2c1f0a" material="roughness:0.5;metalness:0.5"></a-box>
-
-  <!-- COLUMNAS INTERIORES (8 columnas decorativas) -->
-  <!-- Columnas Norte -->
-  <a-entity position="-8 0 -10">
-    <a-cylinder radius="0.45" height="8" color="#1c1208" material="roughness:0.7;metalness:0.2" segments-radial="16"></a-cylinder>
-    <a-cylinder position="0 4.1 0" radius="0.65" height="0.3" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-    <a-cylinder position="0 -0.05 0" radius="0.65" height="0.2" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-  </a-entity>
-  <a-entity position=" 8 0 -10">
-    <a-cylinder radius="0.45" height="8" color="#1c1208" material="roughness:0.7;metalness:0.2" segments-radial="16"></a-cylinder>
-    <a-cylinder position="0 4.1 0" radius="0.65" height="0.3" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-    <a-cylinder position="0 -0.05 0" radius="0.65" height="0.2" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-  </a-entity>
-  <!-- Columnas Sur -->
-  <a-entity position="-8 0 10">
-    <a-cylinder radius="0.45" height="8" color="#1c1208" material="roughness:0.7;metalness:0.2" segments-radial="16"></a-cylinder>
-    <a-cylinder position="0 4.1 0" radius="0.65" height="0.3" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-    <a-cylinder position="0 -0.05 0" radius="0.65" height="0.2" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-  </a-entity>
-  <a-entity position=" 8 0 10">
-    <a-cylinder radius="0.45" height="8" color="#1c1208" material="roughness:0.7;metalness:0.2" segments-radial="16"></a-cylinder>
-    <a-cylinder position="0 4.1 0" radius="0.65" height="0.3" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-    <a-cylinder position="0 -0.05 0" radius="0.65" height="0.2" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-  </a-entity>
-  <!-- Columnas esquina -->
-  <a-entity position="-15 0 -15">
-    <a-cylinder radius="0.55" height="8" color="#1a1107" material="roughness:0.7;metalness:0.2" segments-radial="16"></a-cylinder>
-    <a-cylinder position="0 4.1 0" radius="0.75" height="0.35" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-  </a-entity>
-  <a-entity position=" 15 0 -15">
-    <a-cylinder radius="0.55" height="8" color="#1a1107" material="roughness:0.7;metalness:0.2" segments-radial="16"></a-cylinder>
-    <a-cylinder position="0 4.1 0" radius="0.75" height="0.35" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-  </a-entity>
-  <a-entity position="-15 0 15">
-    <a-cylinder radius="0.55" height="8" color="#1a1107" material="roughness:0.7;metalness:0.2" segments-radial="16"></a-cylinder>
-    <a-cylinder position="0 4.1 0" radius="0.75" height="0.35" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-  </a-entity>
-  <a-entity position=" 15 0 15">
-    <a-cylinder radius="0.55" height="8" color="#1a1107" material="roughness:0.7;metalness:0.2" segments-radial="16"></a-cylinder>
-    <a-cylinder position="0 4.1 0" radius="0.75" height="0.35" color="#3a2a10" material="roughness:0.5;metalness:0.5"></a-cylinder>
-  </a-entity>
-
-  <!-- ══════════════════════
-       FUENTE CENTRAL
-  ══════════════════════ -->
-  <a-entity position="0 0 0" id="fountain">
-    <!-- Base mayor de mármol oscuro -->
-    <a-cylinder position="0 0.2 0" radius="4.2" height="0.4" color="#2a1e10" material="roughness:0.6;metalness:0.2"></a-cylinder>
-    <!-- Borde dorado de la pila -->
-    <a-torus position="0 0.45 0" rotation="90 0 0" radius="4.0" radius-tubular="0.07" color="#c8922a" material="roughness:0.3;metalness:0.7"></a-torus>
-    <!-- Agua inferior  -->
-    <a-cylinder position="0 0.43 0" radius="3.8" height="0.06" color="#0b3d5a" material="opacity:0.7;transparent:true;roughness:0;metalness:0.8"></a-cylinder>
-    <!-- Reflejo de agua animado -->
-    <a-plane position="0 0.44 0" rotation="-90 0 0" src="#water-tex" width="7.4" height="7.4"
-      material="opacity:0.3;transparent:true;roughness:0;color:#0a6080">
-      <a-animation attribute="rotation" to="-90 360 0" dur="25000" repeat="indefinite" easing="linear"></a-animation>
-    </a-plane>
-
-    <!-- Pilar central estriado (múltiples cilindros apilados) -->
-    <a-cylinder position="0 0.8 0"  radius="0.55" height="1.2" color="#c8c0b0" material="roughness:0.4"></a-cylinder>
-    <a-cylinder position="0 1.6 0"  radius="0.45" height="0.8" color="#b8b0a0" material="roughness:0.4"></a-cylinder>
-    <!-- Platillo intermedio -->
-    <a-cylinder position="0 2.1 0"  radius="2.2"  height="0.15" color="#9a9080" material="roughness:0.5"></a-cylinder>
-    <a-torus     position="0 2.1 0" rotation="90 0 0" radius="2.15" radius-tubular="0.045" color="#c8922a" material="roughness:0.3;metalness:0.7"></a-torus>
-    <!-- Agua platillo -->
-    <a-cylinder position="0 2.2 0"  radius="2.0"  height="0.04" color="#0a4a6a" material="opacity:0.65;transparent:true"></a-cylinder>
-    <!-- Pilar superior -->
-    <a-cylinder position="0 2.5 0"  radius="0.35" height="0.7" color="#b8b0a0" material="roughness:0.4"></a-cylinder>
-    <!-- Cúspide esférica -->
-    <a-sphere   position="0 3.0 0"  radius="0.5"  color="#e0d8c8" material="roughness:0.3;metalness:0.2"></a-sphere>
-
-    <!-- Focos bajo el agua -->
-    <a-light type="spot" color="#1a8fb8" intensity="2.5" position="3 0.5 0"    rotation="70 -90 0" angle="40" penumbra="0.7"></a-light>
-    <a-light type="spot" color="#1a8fb8" intensity="2.5" position="-3 0.5 0"   rotation="70 90 0"  angle="40" penumbra="0.7"></a-light>
-    <a-light type="spot" color="#1a8fb8" intensity="2.5" position="0 0.5 3"    rotation="70 0 0"   angle="40" penumbra="0.7"></a-light>
-    <a-light type="spot" color="#1a8fb8" intensity="2.5" position="0 0.5 -3"   rotation="70 180 0" angle="40" penumbra="0.7"></a-light>
-  </a-entity>
-
-  <!-- ══════════════════════
-       BANCOS DE MADERA
-  ══════════════════════ -->
-  <!-- Banco Norte -->
-  <a-entity position="0 0 -7" rotation="0 0 0">
-    <a-box position="0 0.48 0" width="3"   height="0.1"  depth="0.65" color="#3d1f08" material="roughness:0.7"></a-box>
-    <a-box position="0 0.75 -0.28" width="3" height="0.55" depth="0.08" color="#2e1606" material="roughness:0.7"></a-box>
-    <a-box position="-1.3 0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-    <a-box position=" 1.3 0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-    <a-box position="0    0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-  </a-entity>
-  <!-- Banco Sur -->
-  <a-entity position="0 0 7" rotation="0 180 0">
-    <a-box position="0 0.48 0" width="3"   height="0.1"  depth="0.65" color="#3d1f08" material="roughness:0.7"></a-box>
-    <a-box position="0 0.75 -0.28" width="3" height="0.55" depth="0.08" color="#2e1606" material="roughness:0.7"></a-box>
-    <a-box position="-1.3 0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-    <a-box position=" 1.3 0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-    <a-box position="0    0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-  </a-entity>
-  <!-- Banco Este -->
-  <a-entity position="7 0 0" rotation="0 90 0">
-    <a-box position="0 0.48 0" width="3"   height="0.1"  depth="0.65" color="#3d1f08" material="roughness:0.7"></a-box>
-    <a-box position="0 0.75 -0.28" width="3" height="0.55" depth="0.08" color="#2e1606" material="roughness:0.7"></a-box>
-    <a-box position="-1.3 0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-    <a-box position=" 1.3 0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-  </a-entity>
-  <!-- Banco Oeste -->
-  <a-entity position="-7 0 0" rotation="0 -90 0">
-    <a-box position="0 0.48 0" width="3"   height="0.1"  depth="0.65" color="#3d1f08" material="roughness:0.7"></a-box>
-    <a-box position="0 0.75 -0.28" width="3" height="0.55" depth="0.08" color="#2e1606" material="roughness:0.7"></a-box>
-    <a-box position="-1.3 0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-    <a-box position=" 1.3 0.24 0" width="0.12" height="0.48" depth="0.5" color="#1a0d03"></a-box>
-  </a-entity>
-
-  <!-- ══════════════════════
-       MARCOS Y OBRAS DE ARTE
-  ══════════════════════ -->
-
-  <!-- Plantilla macro de marco dorado:
-       - Marco exterior madera oscura
-       - Filo dorado metálico
-       - Imagen enmarcada
-       - Luz de foco cálida
-       - Placa descriptiva
-  -->
-
-  <!-- ── OBRA 1: La Gioconda ── (Norte, centro) -->
-  <a-entity class="artwork"
-    position="0 3.2 -15.65"
-    data-title="La Gioconda (Mona Lisa)"
-    data-meta="Leonardo da Vinci · 1503–1519 · Óleo sobre tabla de álamo"
-    data-desc="La obra más reconocida de la historia del arte. Pintada sobre tabla de álamo, destaca por su técnica de sfumato y la enigmática sonrisa de su retratada, cuya identidad aún despierta debate entre historiadores."
-    id="obra-monalisa"
-  >
-    <!-- Marco externo -->
-    <a-box width="2.4" height="3.4" depth="0.15" color="#2a1506" material="roughness:0.6"></a-box>
-    <!-- Borde dorado interior -->
-    <a-box width="2.25" height="3.25" depth="0.16" color="#c8922a" material="roughness:0.2;metalness:0.8"></a-box>
-    <!-- Imagen -->
-    <a-plane position="0 0 0.085" width="2.0" height="2.9" src="#monalisa" material="roughness:0.3"></a-plane>
-    <!-- Foco de cuadro -->
-    <a-light type="spot" position="0 2.5 1.8" rotation="-50 0 0" intensity="2.5" angle="28" penumbra="0.5" color="#fffbe8" distance="8"></a-light>
-    <!-- Placa dorada -->
-    <a-entity position="0 -2.0 0.1">
-      <a-box width="1.8" height="0.22" depth="0.04" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-      <a-text value="LA GIOCONDA  ·  da Vinci, 1503" align="center" position="0 0 0.03" width="1.6" color="#0a0500" wrap-count="28"></a-text>
+    <!-- Cámara -->
+    <a-entity position="0 1.6 8">
+      <a-camera wasd-controls="acceleration: 60">
+        <a-cursor></a-cursor>
+      </a-camera>
     </a-entity>
-  </a-entity>
 
-  <!-- ── OBRA 2: La Noche Estrellada ── (Oeste, centro) -->
-  <a-entity class="artwork"
-    position="-15.65 3.2 0" rotation="0 90 0"
-    data-title="La Noche Estrellada"
-    data-meta="Vincent van Gogh · 1889 · Óleo sobre lienzo"
-    data-desc="Pintada durante su internamiento en el asilo de Saint-Paul-de-Mausole, esta obra postimpresionista capta el cielo nocturno con un dinamismo casi hipnótico. Los remolinos de luz son símbolo universal de la creatividad en estado puro."
-    id="obra-starry"
-  >
-    <a-box width="5.0" height="3.8" depth="0.15" color="#050308" material="roughness:0.7"></a-box>
-    <a-box width="4.85" height="3.65" depth="0.16" color="#c8922a" material="roughness:0.2;metalness:0.8"></a-box>
-    <a-plane position="0 0 0.085" width="4.6" height="3.4" src="#starry" material="roughness:0.3"></a-plane>
-    <a-light type="spot" position="0 2.5 1.8" rotation="-50 0 0" intensity="2.2" angle="38" penumbra="0.5" color="#eef6ff" distance="8"></a-light>
-    <a-entity position="0 -2.05 0.1">
-      <a-box width="3.6" height="0.22" depth="0.04" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-      <a-text value="LA NOCHE ESTRELLADA  ·  van Gogh, 1889" align="center" position="0 0 0.03" width="3.2" color="#0a0500" wrap-count="40"></a-text>
+    <!-- Luces -->
+    <a-light type="ambient" intensity="1"></a-light>
+    <a-light type="point" position="0 6 0"></a-light>
+
+    <!-- Suelo -->
+    <a-plane src="#floor-texture" rotation="-90 0 0" width="40" height="40"></a-plane>
+
+    <!-- Paredes -->
+    <a-box position="0 4 -15" width="30" height="8" depth="0.5" color="#555"></a-box>
+    <a-box position="0 4 15" width="30" height="8" depth="0.5" color="#555"></a-box>
+    <a-box position="-15 4 0" width="0.5" height="8" depth="30" color="#777"></a-box>
+    <a-box position="15 4 0" width="0.5" height="8" depth="30" color="#777"></a-box>
+
+    <!-- CUADROS DE COCHES -->
+
+    <!-- Mustang -->
+    <a-entity position="0 2.8 -14.7">
+      <a-box width="2" height="2.8" depth="0.1" color="#333"></a-box>
+      <a-plane position="0 0 0.051" width="1.8" height="2.6" src="#mustang"></a-plane>
+      <a-text value="Ford Mustang\nAño: 1967\nMuscle car americano"
+              align="center" position="0 -2 0.1" width="4"></a-text>
     </a-entity>
-  </a-entity>
 
-  <!-- ── OBRA 3: La Gran Ola ── (Este, centro) -->
-  <a-entity class="artwork"
-    position="15.65 3.2 0" rotation="0 -90 0"
-    data-title="La Gran Ola de Kanagawa"
-    data-meta="Katsushika Hokusai · c.1831 · Xilografía Ukiyo-e"
-    data-desc="El grabado japonés más reconocible del mundo, de la serie 'Treinta y seis vistas del Monte Fuji'. La ola, a punto de engullir los botes de pescadores, encarna la tensión entre la fragilidad humana y la imponente naturaleza."
-    id="obra-wave"
-  >
-    <a-box width="4.4" height="3.2" depth="0.15" color="#3a2a05" material="roughness:0.6"></a-box>
-    <a-box width="4.25" height="3.05" depth="0.16" color="#c8922a" material="roughness:0.2;metalness:0.8"></a-box>
-    <a-plane position="0 0 0.085" width="4.0" height="2.8" src="#wave" material="roughness:0.3"></a-plane>
-    <a-light type="spot" position="0 2.5 1.8" rotation="-50 0 0" intensity="2.2" angle="36" penumbra="0.5" color="#f0f8ff" distance="8"></a-light>
-    <a-entity position="0 -1.75 0.1">
-      <a-box width="3.2" height="0.22" depth="0.04" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-      <a-text value="LA GRAN OLA DE KANAGAWA  ·  Hokusai, 1831" align="center" position="0 0 0.03" width="2.9" color="#0a0500" wrap-count="42"></a-text>
+    <!-- Cadillac -->
+    <a-entity position="-14.7 2.8 0" rotation="0 90 0">
+      <a-box width="4.4" height="3.2" depth="0.1" color="#333"></a-box>
+      <a-plane position="0 0 0.051" width="4.2" height="3" src="#cadillac"></a-plane>
+      <a-text value="Cadillac Eldorado\nAño: 1959\nLujo americano"
+              align="center" position="0 -2 0.1" width="6"></a-text>
     </a-entity>
-  </a-entity>
 
-  <!-- ── OBRA 4: La Joven de la Perla ── (Sur, izquierda) -->
-  <a-entity class="artwork"
-    position="-6 3.0 15.65" rotation="0 180 0"
-    data-title="La Joven de la Perla"
-    data-meta="Johannes Vermeer · c.1665 · Óleo sobre lienzo"
-    data-desc="A menudo llamada la 'Mona Lisa del Norte', esta obra maestra del Barroco holandés destaca por su luz envolvente y la expresión entre vulnerable e intensa de la joven. La perla en la oreja ha generado incontables interpretaciones."
-    id="obra-pearl"
-  >
-    <a-box width="2.2" height="2.7" depth="0.15" color="#000" material="roughness:0.7"></a-box>
-    <a-box width="2.05" height="2.55" depth="0.16" color="#c8922a" material="roughness:0.2;metalness:0.8"></a-box>
-    <a-plane position="0 0 0.085" width="1.8" height="2.3" src="#pearl" material="roughness:0.3"></a-plane>
-    <a-light type="spot" position="0 2.5 1.8" rotation="-50 0 0" intensity="2.0" angle="28" penumbra="0.5" color="#fff8f0" distance="8"></a-light>
-    <a-entity position="0 -1.5 0.1">
-      <a-box width="1.8" height="0.22" depth="0.04" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-      <a-text value="LA JOVEN DE LA PERLA  ·  Vermeer, 1665" align="center" position="0 0 0.03" width="1.6" color="#0a0500" wrap-count="34"></a-text>
+    <!-- Beetle -->
+    <a-entity position="14.7 2.8 0" rotation="0 -90 0">
+      <a-box width="3.6" height="2.6" depth="0.1" color="#333"></a-box>
+      <a-plane position="0 0 0.051" width="3.4" height="2.4" src="#beetle"></a-plane>
+      <a-text value="Volkswagen Beetle\nAño: 1960\nCoche popular"
+              align="center" position="0 -2 0.1" width="5"></a-text>
     </a-entity>
-  </a-entity>
 
-  <!-- ── OBRA 5: La Persistencia de la Memoria ── (Sur, derecha) -->
-  <a-entity class="artwork"
-    position="6 3.0 15.65" rotation="0 180 0"
-    data-title="La Persistencia de la Memoria"
-    data-meta="Salvador Dalí · 1931 · Óleo sobre lienzo"
-    data-desc="El icono más reconocible del surrealismo. Los relojes blandos representan la fluidez subjetiva del tiempo en el subconsciente. Dalí afirmó haberse inspirado en un trozo de queso Camembert derritiéndose al sol."
-    id="obra-persistence"
-  >
-    <a-box width="2.8" height="2.1" depth="0.15" color="#4a2c08" material="roughness:0.6"></a-box>
-    <a-box width="2.65" height="1.95" depth="0.16" color="#c8922a" material="roughness:0.2;metalness:0.8"></a-box>
-    <a-plane position="0 0 0.085" width="2.4" height="1.7" src="#persistence" material="roughness:0.3"></a-plane>
-    <a-light type="spot" position="0 2.5 1.8" rotation="-50 0 0" intensity="2.0" angle="32" penumbra="0.5" color="#fef3c7" distance="8"></a-light>
-    <a-entity position="0 -1.2 0.1">
-      <a-box width="2.4" height="0.22" depth="0.04" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-      <a-text value="PERSISTENCIA DE LA MEMORIA  ·  Dalí, 1931" align="center" position="0 0 0.03" width="2.2" color="#0a0500" wrap-count="40"></a-text>
+    <!-- Porsche -->
+    <a-entity position="-6 2.8 14.7" rotation="0 180 0">
+      <a-box width="1.8" height="2.2" depth="0.1" color="#333"></a-box>
+      <a-plane position="0 0 0.051" width="1.6" height="2" src="#porsche"></a-plane>
+      <a-text value="Porsche 911\nAño: 1964\nDeportivo icónico"
+              align="center" position="0 -2 0.1" width="4"></a-text>
     </a-entity>
-  </a-entity>
 
-  <!-- ── OBRA 6: La Creación de Adán ── (Norte, izquierda) -->
-  <a-entity class="artwork"
-    position="-9 3.2 -15.65"
-    data-title="La Creación de Adán (detalle)"
-    data-meta="Miguel Ángel · 1508–1512 · Fresco"
-    data-desc="El fresco más famoso de la Capilla Sixtina y de toda la historia del arte occidental. El espacio entre los dedos de Dios y Adán —a punto de tocarse— es uno de los gestos más analizados y reproducidos de la humanidad."
-    id="obra-creation"
-  >
-    <a-box width="3.8" height="2.4" depth="0.15" color="#1a1008" material="roughness:0.8"></a-box>
-    <a-box width="3.65" height="2.25" depth="0.16" color="#c8922a" material="roughness:0.2;metalness:0.8"></a-box>
-    <a-plane position="0 0 0.085" width="3.4" height="2.0" src="#creation" material="roughness:0.3"></a-plane>
-    <a-light type="spot" position="0 2.5 1.8" rotation="-50 0 0" intensity="2.3" angle="36" penumbra="0.5" color="#fff8e8" distance="8"></a-light>
-    <a-entity position="0 -1.35 0.1">
-      <a-box width="2.8" height="0.22" depth="0.04" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-      <a-text value="LA CREACIÓN DE ADÁN  ·  Miguel Ángel, 1512" align="center" position="0 0 0.03" width="2.5" color="#0a0500" wrap-count="42"></a-text>
+    <!-- Ferrari -->
+    <a-entity position="6 2.8 14.7" rotation="0 180 0">
+      <a-box width="2.4" height="1.8" depth="0.1" color="#333"></a-box>
+      <a-plane position="0 0 0.051" width="2.2" height="1.6" src="#ferrari"></a-plane>
+      <a-text value="Ferrari 250 GTO\nAño: 1962\nLeyenda del automovilismo"
+              align="center" position="0 -2 0.1" width="4"></a-text>
     </a-entity>
-  </a-entity>
 
-  <!-- ── OBRA 7: El Grito ── (Norte, derecha) -->
-  <a-entity class="artwork"
-    position="9 3.2 -15.65"
-    data-title="El Grito"
-    data-meta="Edvard Munch · 1893 · Óleo, temple y pastel sobre cartón"
-    data-desc="Expresión máxima de la angustia moderna. Munch describió la experiencia que inspiró la obra: 'Sentí un grito inmenso e infinito atravesar la naturaleza'. El cielo rojo sangre evoca el volcán Krakatoa, cuya erupción tiñó los atardeceres europeos."
-    id="obra-scream"
-  >
-    <a-box width="2.4" height="3.0" depth="0.15" color="#0a0508" material="roughness:0.7"></a-box>
-    <a-box width="2.25" height="2.85" depth="0.16" color="#c8922a" material="roughness:0.2;metalness:0.8"></a-box>
-    <a-plane position="0 0 0.085" width="2.0" height="2.6" src="#scream" material="roughness:0.3"></a-plane>
-    <a-light type="spot" position="0 2.5 1.8" rotation="-50 0 0" intensity="2.0" angle="30" penumbra="0.5" color="#ffece0" distance="8"></a-light>
-    <a-entity position="0 -1.6 0.1">
-      <a-box width="1.8" height="0.22" depth="0.04" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-      <a-text value="EL GRITO  ·  Munch, 1893" align="center" position="0 0 0.03" width="1.6" color="#0a0500" wrap-count="28"></a-text>
-    </a-entity>
-  </a-entity>
-
-  <!-- ── OBRA 8: La Libertad guiando al Pueblo ── (Oeste, lateral) -->
-  <a-entity class="artwork"
-    position="-15.65 3.4 -7" rotation="0 90 0"
-    data-title="La Libertad guiando al Pueblo"
-    data-meta="Eugène Delacroix · 1830 · Óleo sobre lienzo"
-    data-desc="Emblema del Romanticismo francés, pintada tras las Tres Gloriosas jornadas de julio de 1830. La figura alegórica de Marianne liderando al pueblo con la bandera tricolor se ha convertido en símbolo universal de la lucha por la libertad."
-    id="obra-liberty"
-  >
-    <a-box width="5.2" height="4.4" depth="0.15" color="#1a0e06" material="roughness:0.7"></a-box>
-    <a-box width="5.05" height="4.25" depth="0.16" color="#c8922a" material="roughness:0.2;metalness:0.8"></a-box>
-    <a-plane position="0 0 0.085" width="4.8" height="4.0" src="#liberty" material="roughness:0.3"></a-plane>
-    <a-light type="spot" position="0 2.5 2.0" rotation="-50 0 0" intensity="2.5" angle="45" penumbra="0.5" color="#fff5e8" distance="10"></a-light>
-    <a-entity position="0 -2.3 0.1">
-      <a-box width="3.8" height="0.22" depth="0.04" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-      <a-text value="LA LIBERTAD GUIANDO AL PUEBLO  ·  Delacroix, 1830" align="center" position="0 0 0.03" width="3.4" color="#0a0500" wrap-count="48"></a-text>
-    </a-entity>
-  </a-entity>
-
-  <!-- ══════════════════════
-       LETRERO DE ENTRADA
-  ══════════════════════ -->
-  <a-entity position="0 6.5 -15.4">
-    <!-- Fondo del cartel -->
-    <a-box width="8" height="1.2" depth="0.1" color="#1a1006" material="roughness:0.6;metalness:0.2"></a-box>
-    <!-- Bordes dorados -->
-    <a-box width="8.3" height="1.5" depth="0.05" color="#c8922a" material="roughness:0.2;metalness:0.9"></a-box>
-    <!-- Título 3D en texto A-Frame -->
-    <a-text value="GALERÍA INFINITA" align="center" position="0 0.15 0.08" width="7" color="#d4a853" font="https://cdn.aframe.io/fonts/Exo2Bold.fnt" wrap-count="20"></a-text>
-    <a-text value="Grandes Maestros del Arte Universal" align="center" position="0 -0.25 0.08" width="5" color="#8b6830" wrap-count="32"></a-text>
-    <!-- Luz sobre el letrero -->
-    <a-light type="spot" position="0 1.5 1.5" rotation="-40 0 0" intensity="1.5" angle="30" color="#d4a853" distance="5"></a-light>
-  </a-entity>
-
-  <!-- ══════════════════════
-       DETALLES DECORATIVOS
-  ══════════════════════ -->
-  <!-- Alfombra central de acceso -->
-  <a-plane position="0 0.01 5" rotation="-90 0 0" width="3" height="8"
-    color="#2a1808" material="roughness:0.9; metalness:0; opacity:0.9">
-  </a-plane>
-  <a-plane position="0 0.01 5" rotation="-90 0 0" width="2.6" height="7.6"
-    color="#1a0f06" material="roughness:0.95; opacity:0.85">
-  </a-plane>
-
-  <!-- Pequeñas luces de ambiente en techo (lámparas colgantes) -->
-  <a-sphere position="-8 7.5 -10"  radius="0.12" color="#d4a853" material="emissive:#d4a853; emissiveIntensity:1"></a-sphere>
-  <a-light type="point" position="-8 7.2 -10" intensity="0.4" distance="6" color="#ffd080"></a-light>
-  <a-sphere position=" 8 7.5 -10"  radius="0.12" color="#d4a853" material="emissive:#d4a853; emissiveIntensity:1"></a-sphere>
-  <a-light type="point" position=" 8 7.2 -10" intensity="0.4" distance="6" color="#ffd080"></a-light>
-  <a-sphere position="-8 7.5  10"  radius="0.12" color="#d4a853" material="emissive:#d4a853; emissiveIntensity:1"></a-sphere>
-  <a-light type="point" position="-8 7.2  10" intensity="0.4" distance="6" color="#ffd080"></a-light>
-  <a-sphere position=" 8 7.5  10"  radius="0.12" color="#d4a853" material="emissive:#d4a853; emissiveIntensity:1"></a-sphere>
-  <a-light type="point" position=" 8 7.2  10" intensity="0.4" distance="6" color="#ffd080"></a-light>
-
-</a-scene>
-
-<!-- ══════════════════════════════════
-     LÓGICA JS: Carga + Panel de obra
-══════════════════════════════════ -->
-<script>
-  // ── Loading screen ──
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      document.getElementById('loading-screen').classList.add('hidden');
-      document.getElementById('hud').classList.add('visible');
-      document.getElementById('compass').classList.add('visible');
-    }, 3400);
-  });
-
-  // ── Panel de información al hacer click en obra ──
-  const panel      = document.getElementById('artwork-panel');
-  const panelTitle = document.getElementById('panel-title');
-  const panelMeta  = document.getElementById('panel-meta');
-  const panelDesc  = document.getElementById('panel-desc');
-  let   panelTimer = null;
-
-  function showPanel(el) {
-    panelTitle.textContent = el.dataset.title || '';
-    panelMeta.textContent  = el.dataset.meta  || '';
-    panelDesc.textContent  = el.dataset.desc  || '';
-    panel.classList.add('visible');
-    if (panelTimer) clearTimeout(panelTimer);
-    panelTimer = setTimeout(() => panel.classList.remove('visible'), 7000);
-  }
-
-  document.querySelectorAll('.artwork').forEach(el => {
-    el.addEventListener('click', () => showPanel(el));
-  });
-
-  // ── Brújula (sigue la cámara) ──
-  const compass = document.getElementById('compass');
-  const dirs = ['N','NE','E','SE','S','SO','O','NO'];
-  function updateCompass() {
-    const cam = document.querySelector('[camera]');
-    if (!cam) return;
-    const rot = cam.object3D.rotation.y * (180 / Math.PI);
-    const norm = ((rot % 360) + 360) % 360;
-    const idx  = Math.round(norm / 45) % 8;
-    compass.textContent = dirs[idx];
-    requestAnimationFrame(updateCompass);
-  }
-  document.querySelector('a-scene').addEventListener('loaded', updateCompass);
-</script>
-
+  </a-scene>
 </body>
 </html>
