@@ -2,627 +2,522 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Exposición VR - Coches Clásicos de Rally</title>
-  <meta name="description" content="Museo virtual 3D de coches clásicos de rally y sport de los años 80 y 90. Experiencia VR inmersiva.">
+  <title>Museo VR — Coches Clásicos Legendarios</title>
+  <meta name="description" content="Museo virtual inmersivo con coches clásicos legendarios en 3D. Ferrari, Mercedes, Jaguar, Porsche y más.">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
-    body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+    body{margin:0;padding:0;background:#000;overflow:hidden;font-family:'Segoe UI',sans-serif}
+    #loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a0a,#1a1a2e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 1s}
+    #loading-screen h1{color:#d4af37;font-size:2.5em;letter-spacing:8px;text-transform:uppercase;margin-bottom:10px}
+    #loading-screen p{color:#888;font-size:1em;letter-spacing:3px}
+    .gold-line{width:200px;height:2px;background:linear-gradient(90deg,transparent,#d4af37,transparent);margin:20px 0;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+    #info-panel{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(10,10,10,.92);border:1px solid #d4af37;border-radius:12px;padding:20px 30px;color:#fff;z-index:100;display:none;max-width:500px;backdrop-filter:blur(10px);text-align:center}
+    #info-panel h2{color:#d4af37;margin:0 0 8px;font-size:1.3em;letter-spacing:2px}
+    #info-panel .specs{color:#bbb;font-size:.9em;line-height:1.6}
+    #info-panel .close-btn{position:absolute;top:8px;right:12px;color:#d4af37;cursor:pointer;font-size:1.2em;background:none;border:none}
   </style>
 </head>
 <body>
-<a-scene renderer="antialias: true; colorManagement: true;" fog="type: linear; color: #1a1a1a; near: 30; far: 65">
+
+<div id="loading-screen">
+  <h1>Museo Clásicos</h1>
+  <div class="gold-line"></div>
+  <p>Cargando experiencia VR...</p>
+</div>
+
+<div id="info-panel">
+  <button class="close-btn" onclick="this.parentElement.style.display='none'">&times;</button>
+  <h2 id="info-name"></h2>
+  <div id="info-specs" class="specs"></div>
+</div>
+
+<a-scene renderer="antialias:true;colorManagement:true" fog="type:exponential;color:#080810;density:0.012" loading-screen="enabled:false">
 
 <script>
-// ========== COMPONENTE: LOW-POLY CAR BUILDER ==========
-AFRAME.registerComponent('lowpoly-car', {
-  schema: {
-    bodyColor:   { type: 'color', default: '#ffffff' },
-    accentColor: { type: 'color', default: '#333333' },
-    wheelColor:  { type: 'color', default: '#111111' },
-    rimColor:    { type: 'color', default: '#ccc' },
-    // Body shape
-    bodyLength:  { type: 'number', default: 3.6 },
-    bodyWidth:   { type: 'number', default: 1.6 },
-    bodyHeight:  { type: 'number', default: 0.6 },
-    // Cabin
-    cabinLength: { type: 'number', default: 1.8 },
-    cabinHeight: { type: 'number', default: 0.55 },
-    cabinOffset: { type: 'number', default: -0.1 },
-    // Features
-    hasSpoiler:    { type: 'boolean', default: false },
-    spoilerHeight: { type: 'number', default: 0.6 },
-    hasWhaleTail:  { type: 'boolean', default: false },
-    isHatchback:   { type: 'boolean', default: false },
-    isLowSport:    { type: 'boolean', default: false },
-    wheelRadius:   { type: 'number', default: 0.28 },
-    stripeColor:   { type: 'color', default: '' },
+// Remove loading screen
+document.querySelector('a-scene').addEventListener('loaded',()=>{
+  const ls=document.getElementById('loading-screen');
+  ls.style.opacity='0';setTimeout(()=>ls.remove(),1200);
+});
+
+// ========== ROTATING PEDESTAL ==========
+AFRAME.registerComponent('rotate-pedestal',{
+  schema:{speed:{type:'number',default:0.15}},
+  tick:function(t,dt){this.el.object3D.rotation.y+=this.data.speed*dt*0.001;}
+});
+
+// ========== SHOW INFO ON CLICK ==========
+AFRAME.registerComponent('car-info',{
+  schema:{
+    name:{type:'string'},
+    year:{type:'string'},
+    engine:{type:'string'},
+    power:{type:'string'},
+    speed:{type:'string'},
+    production:{type:'string'},
+    origin:{type:'string'},
+    price:{type:'string'}
   },
-
-  init: function () {
-    const d = this.data;
-    const el = this.el;
-    const bL = d.bodyLength, bW = d.bodyWidth, bH = d.bodyHeight;
-    const cL = d.cabinLength, cH = d.cabinHeight;
-    const baseY = d.wheelRadius + 0.05;
-
-    // ---- CHASSIS / UNDERBODY ----
-    const chassis = document.createElement('a-box');
-    chassis.setAttribute('width', bL);
-    chassis.setAttribute('height', 0.1);
-    chassis.setAttribute('depth', bW);
-    chassis.setAttribute('position', `0 ${baseY - 0.05} 0`);
-    chassis.setAttribute('color', '#111');
-    chassis.setAttribute('material', 'roughness: 0.8');
-    el.appendChild(chassis);
-
-    // ---- MAIN BODY ----
-    const body = document.createElement('a-box');
-    body.setAttribute('width', bL);
-    body.setAttribute('height', bH);
-    body.setAttribute('depth', bW);
-    body.setAttribute('position', `0 ${baseY + bH / 2} 0`);
-    body.setAttribute('color', d.bodyColor);
-    body.setAttribute('material', `roughness: 0.3; metalness: 0.5`);
-    el.appendChild(body);
-
-    // ---- CABIN ----
-    const cabY = baseY + bH + cH / 2;
-    const cabin = document.createElement('a-box');
-    cabin.setAttribute('width', cL);
-    cabin.setAttribute('height', cH);
-    cabin.setAttribute('depth', bW * 0.92);
-    cabin.setAttribute('position', `${d.cabinOffset} ${cabY} 0`);
-    cabin.setAttribute('color', '#222');
-    cabin.setAttribute('material', 'roughness: 0.1; metalness: 0.3; opacity: 0.7; transparent: true');
-    el.appendChild(cabin);
-
-    // ---- WINDSHIELDS (front & rear) ----
-    const wsH = cH * 0.9;
-    const wsFront = document.createElement('a-box');
-    wsFront.setAttribute('width', 0.04);
-    wsFront.setAttribute('height', wsH);
-    wsFront.setAttribute('depth', bW * 0.85);
-    wsFront.setAttribute('position', `${d.cabinOffset + cL / 2 + 0.15} ${cabY} 0`);
-    wsFront.setAttribute('rotation', '0 0 15');
-    wsFront.setAttribute('color', '#1a3a5c');
-    wsFront.setAttribute('material', 'opacity: 0.5; transparent: true; metalness: 0.8');
-    el.appendChild(wsFront);
-
-    if (!d.isHatchback) {
-      const wsRear = document.createElement('a-box');
-      wsRear.setAttribute('width', 0.04);
-      wsRear.setAttribute('height', wsH);
-      wsRear.setAttribute('depth', bW * 0.85);
-      wsRear.setAttribute('position', `${d.cabinOffset - cL / 2 - 0.15} ${cabY} 0`);
-      wsRear.setAttribute('rotation', '0 0 -15');
-      wsRear.setAttribute('color', '#1a3a5c');
-      wsRear.setAttribute('material', 'opacity: 0.5; transparent: true; metalness: 0.8');
-      el.appendChild(wsRear);
-    }
-
-    // ---- HEADLIGHTS ----
-    for (let side of [-1, 1]) {
-      const hl = document.createElement('a-box');
-      hl.setAttribute('width', 0.06);
-      hl.setAttribute('height', 0.15);
-      hl.setAttribute('depth', 0.25);
-      hl.setAttribute('position', `${bL / 2 + 0.02} ${baseY + bH * 0.5} ${side * bW * 0.3}`);
-      hl.setAttribute('color', '#ffffcc');
-      hl.setAttribute('material', 'emissive: #ffffaa; emissiveIntensity: 0.3');
-      el.appendChild(hl);
-    }
-
-    // ---- TAILLIGHTS ----
-    for (let side of [-1, 1]) {
-      const tl = document.createElement('a-box');
-      tl.setAttribute('width', 0.06);
-      tl.setAttribute('height', 0.12);
-      tl.setAttribute('depth', 0.3);
-      tl.setAttribute('position', `${-bL / 2 - 0.02} ${baseY + bH * 0.45} ${side * bW * 0.3}`);
-      tl.setAttribute('color', '#ff2222');
-      tl.setAttribute('material', 'emissive: #ff0000; emissiveIntensity: 0.3');
-      el.appendChild(tl);
-    }
-
-    // ---- FRONT BUMPER ----
-    const bumperF = document.createElement('a-box');
-    bumperF.setAttribute('width', 0.12);
-    bumperF.setAttribute('height', 0.2);
-    bumperF.setAttribute('depth', bW + 0.05);
-    bumperF.setAttribute('position', `${bL / 2 + 0.05} ${baseY + 0.1} 0`);
-    bumperF.setAttribute('color', d.accentColor);
-    bumperF.setAttribute('material', 'roughness: 0.4');
-    el.appendChild(bumperF);
-
-    // ---- REAR BUMPER ----
-    const bumperR = document.createElement('a-box');
-    bumperR.setAttribute('width', 0.12);
-    bumperR.setAttribute('height', 0.2);
-    bumperR.setAttribute('depth', bW + 0.05);
-    bumperR.setAttribute('position', `${-bL / 2 - 0.05} ${baseY + 0.1} 0`);
-    bumperR.setAttribute('color', d.accentColor);
-    bumperR.setAttribute('material', 'roughness: 0.4');
-    el.appendChild(bumperR);
-
-    // ---- GRILLE ----
-    const grille = document.createElement('a-box');
-    grille.setAttribute('width', 0.05);
-    grille.setAttribute('height', 0.25);
-    grille.setAttribute('depth', bW * 0.5);
-    grille.setAttribute('position', `${bL / 2 + 0.01} ${baseY + bH * 0.3} 0`);
-    grille.setAttribute('color', '#222');
-    grille.setAttribute('material', 'roughness: 0.2; metalness: 0.8');
-    el.appendChild(grille);
-
-    // ---- STRIPE (if provided) ----
-    if (d.stripeColor) {
-      const stripe = document.createElement('a-box');
-      stripe.setAttribute('width', bL + 0.02);
-      stripe.setAttribute('height', 0.08);
-      stripe.setAttribute('depth', bW + 0.01);
-      stripe.setAttribute('position', `0 ${baseY + bH * 0.7} 0`);
-      stripe.setAttribute('color', d.stripeColor);
-      stripe.setAttribute('material', 'roughness: 0.3');
-      el.appendChild(stripe);
-    }
-
-    // ---- SPOILER ----
-    if (d.hasSpoiler) {
-      const spoilerBase = document.createElement('a-box');
-      spoilerBase.setAttribute('width', 0.06);
-      spoilerBase.setAttribute('height', d.spoilerHeight);
-      spoilerBase.setAttribute('depth', 0.06);
-      const spY = baseY + bH + d.spoilerHeight / 2;
-      spoilerBase.setAttribute('position', `${-bL / 2 + 0.3} ${spY} ${bW * 0.3}`);
-      spoilerBase.setAttribute('color', d.bodyColor);
-      el.appendChild(spoilerBase);
-
-      const spoilerBase2 = spoilerBase.cloneNode(true);
-      spoilerBase2.setAttribute('position', `${-bL / 2 + 0.3} ${spY} ${-bW * 0.3}`);
-      el.appendChild(spoilerBase2);
-
-      const spoilerWing = document.createElement('a-box');
-      spoilerWing.setAttribute('width', 0.2);
-      spoilerWing.setAttribute('height', 0.04);
-      spoilerWing.setAttribute('depth', bW + 0.15);
-      spoilerWing.setAttribute('position', `${-bL / 2 + 0.3} ${baseY + bH + d.spoilerHeight + 0.02} 0`);
-      spoilerWing.setAttribute('color', d.bodyColor);
-      spoilerWing.setAttribute('material', 'roughness: 0.2; metalness: 0.4');
-      el.appendChild(spoilerWing);
-    }
-
-    // ---- WHALE TAIL ----
-    if (d.hasWhaleTail) {
-      const wt = document.createElement('a-box');
-      wt.setAttribute('width', 0.5);
-      wt.setAttribute('height', 0.06);
-      wt.setAttribute('depth', bW + 0.1);
-      wt.setAttribute('position', `${-bL / 2 + 0.2} ${baseY + bH + cH * 0.3} 0`);
-      wt.setAttribute('rotation', '0 0 -10');
-      wt.setAttribute('color', d.bodyColor);
-      wt.setAttribute('material', 'roughness: 0.2; metalness: 0.4');
-      el.appendChild(wt);
-    }
-
-    // ---- WHEELS ----
-    const wR = d.wheelRadius;
-    const wheelPositions = [
-      { x: bL * 0.33,  z: bW / 2 + 0.02 },
-      { x: bL * 0.33,  z: -bW / 2 - 0.02 },
-      { x: -bL * 0.33, z: bW / 2 + 0.02 },
-      { x: -bL * 0.33, z: -bW / 2 - 0.02 },
-    ];
-    wheelPositions.forEach(wp => {
-      // Tire
-      const tire = document.createElement('a-cylinder');
-      tire.setAttribute('radius', wR);
-      tire.setAttribute('height', 0.18);
-      tire.setAttribute('rotation', '90 0 0');
-      tire.setAttribute('position', `${wp.x} ${wR} ${wp.z}`);
-      tire.setAttribute('color', d.wheelColor);
-      tire.setAttribute('material', 'roughness: 0.9');
-      el.appendChild(tire);
-      // Rim
-      const rim = document.createElement('a-cylinder');
-      rim.setAttribute('radius', wR * 0.55);
-      rim.setAttribute('height', 0.19);
-      rim.setAttribute('rotation', '90 0 0');
-      rim.setAttribute('position', `${wp.x} ${wR} ${wp.z}`);
-      rim.setAttribute('color', d.rimColor);
-      rim.setAttribute('material', 'roughness: 0.2; metalness: 0.8');
-      el.appendChild(rim);
+  init:function(){
+    this.el.addEventListener('click',()=>{
+      const d=this.data;
+      document.getElementById('info-name').textContent=d.name+' ('+d.year+')';
+      document.getElementById('info-specs').innerHTML=
+        '🏴 '+d.origin+'<br>'+
+        '🔧 Motor: '+d.engine+'<br>'+
+        '⚡ Potencia: '+d.power+'<br>'+
+        '💨 Vel. Max: '+d.speed+'<br>'+
+        '🏭 Producción: '+d.production+'<br>'+
+        '💰 Valor actual: '+d.price;
+      document.getElementById('info-panel').style.display='block';
     });
-
-    // low-sport adjustments
-    if (d.isLowSport) {
-      el.setAttribute('position', {
-        x: el.getAttribute('position').x,
-        y: (el.getAttribute('position').y || 0) - 0.08,
-        z: el.getAttribute('position').z
-      });
-    }
   }
 });
 
-// ========== CAR DATA ==========
-const CARS = [
-  // ROW 1
+// ========== DETAILED CAR BUILDER ==========
+AFRAME.registerComponent('classic-car',{
+  schema:{
+    type:{type:'string',default:'sedan'},
+    bodyColor:{type:'color',default:'#cc0000'},
+    accentColor:{type:'color',default:'#222'},
+    trimColor:{type:'color',default:'#c0c0c0'},
+    bodyLength:{type:'number',default:4.0},
+    bodyWidth:{type:'number',default:1.7},
+    bodyHeight:{type:'number',default:0.55},
+    cabinLength:{type:'number',default:1.8},
+    cabinHeight:{type:'number',default:0.55},
+    cabinOffset:{type:'number',default:0},
+    wheelRadius:{type:'number',default:0.3},
+    hoodLength:{type:'number',default:0},
+    hasFins:{type:'boolean',default:false},
+    hasRoundHeadlights:{type:'boolean',default:true},
+    frontStyle:{type:'string',default:'normal'},
+    rearStyle:{type:'string',default:'normal'},
+  },
+  init:function(){
+    const d=this.data, el=this.el;
+    const bL=d.bodyLength, bW=d.bodyWidth, bH=d.bodyHeight;
+    const cL=d.cabinLength, cH=d.cabinHeight;
+    const wR=d.wheelRadius, baseY=wR+0.06;
+
+    // CHASSIS
+    this.addBox(el,bL*0.95,0.08,bW*0.85,`0 ${baseY-0.04} 0`,'#0a0a0a','roughness:0.9');
+
+    // MAIN BODY - lower
+    this.addBox(el,bL,bH,bW,`0 ${baseY+bH/2} 0`,d.bodyColor,'roughness:0.25;metalness:0.6');
+
+    // HOOD (longer for classic sports)
+    const hoodL=d.hoodLength||bL*0.3;
+    this.addBox(el,hoodL,bH*0.85,bW*0.95,`${bL/2-hoodL/2} ${baseY+bH*0.42} 0`,d.bodyColor,'roughness:0.2;metalness:0.65');
+
+    // CABIN
+    const cabY=baseY+bH+cH/2;
+    this.addBox(el,cL,cH,bW*0.88,`${d.cabinOffset} ${cabY} 0`,'#1a1a2a','roughness:0.1;metalness:0.2;opacity:0.65;transparent:true');
+
+    // WINDSHIELD front
+    this.addBox(el,0.04,cH*0.85,bW*0.82,`${d.cabinOffset+cL/2+0.12} ${cabY} 0`,'#1a2a4a','opacity:0.45;transparent:true;metalness:0.9',`0 0 18`);
+
+    // WINDSHIELD rear
+    this.addBox(el,0.04,cH*0.8,bW*0.78,`${d.cabinOffset-cL/2-0.1} ${cabY} 0`,'#1a2a4a','opacity:0.45;transparent:true;metalness:0.9',`0 0 -18`);
+
+    // ROOF
+    this.addBox(el,cL*0.92,0.06,bW*0.85,`${d.cabinOffset} ${baseY+bH+cH+0.03} 0`,d.bodyColor,'roughness:0.2;metalness:0.6');
+
+    // CHROME TRIM lines
+    this.addBox(el,bL*1.01,0.03,bW*0.01,`0 ${baseY+bH*0.6} ${bW/2}`,d.trimColor,'roughness:0.1;metalness:0.95');
+    this.addBox(el,bL*1.01,0.03,bW*0.01,`0 ${baseY+bH*0.6} ${-bW/2}`,d.trimColor,'roughness:0.1;metalness:0.95');
+
+    // BUMPERS chrome
+    this.addBox(el,0.1,0.18,bW+0.06,`${bL/2+0.04} ${baseY+0.12} 0`,d.trimColor,'roughness:0.1;metalness:0.9');
+    this.addBox(el,0.1,0.18,bW+0.06,`${-bL/2-0.04} ${baseY+0.12} 0`,d.trimColor,'roughness:0.1;metalness:0.9');
+
+    // GRILLE
+    this.addBox(el,0.05,0.28,bW*0.45,`${bL/2+0.01} ${baseY+bH*0.35} 0`,d.accentColor,'roughness:0.2;metalness:0.8');
+
+    // HEADLIGHTS (round for classic)
+    if(d.hasRoundHeadlights){
+      [-1,1].forEach(s=>{
+        const hl=document.createElement('a-cylinder');
+        hl.setAttribute('radius',0.12);hl.setAttribute('height',0.06);
+        hl.setAttribute('rotation','0 0 90');
+        hl.setAttribute('position',`${bL/2+0.03} ${baseY+bH*0.55} ${s*bW*0.32}`);
+        hl.setAttribute('color','#ffffdd');
+        hl.setAttribute('material','emissive:#ffffaa;emissiveIntensity:0.4;metalness:0.8');
+        el.appendChild(hl);
+        // Chrome ring
+        const ring=document.createElement('a-torus');
+        ring.setAttribute('radius',0.12);ring.setAttribute('radius-tubular',0.015);
+        ring.setAttribute('rotation','0 0 90');
+        ring.setAttribute('position',`${bL/2+0.05} ${baseY+bH*0.55} ${s*bW*0.32}`);
+        ring.setAttribute('color',d.trimColor);
+        ring.setAttribute('material','roughness:0.1;metalness:0.95');
+        el.appendChild(ring);
+      });
+    }
+
+    // TAILLIGHTS
+    [-1,1].forEach(s=>{
+      const tl=document.createElement('a-cylinder');
+      tl.setAttribute('radius',0.08);tl.setAttribute('height',0.05);
+      tl.setAttribute('rotation','0 0 90');
+      tl.setAttribute('position',`${-bL/2-0.02} ${baseY+bH*0.45} ${s*bW*0.32}`);
+      tl.setAttribute('color','#ff1111');
+      tl.setAttribute('material','emissive:#ff0000;emissiveIntensity:0.5');
+      el.appendChild(tl);
+    });
+
+    // SIDE MIRRORS
+    [-1,1].forEach(s=>{
+      this.addBox(el,0.08,0.06,0.1,`${d.cabinOffset+cL/2+0.05} ${cabY} ${s*(bW/2+0.08)}`,d.bodyColor,'roughness:0.2;metalness:0.6');
+    });
+
+    // FINS (for 50s/60s cars)
+    if(d.hasFins){
+      [-1,1].forEach(s=>{
+        const fin=document.createElement('a-box');
+        fin.setAttribute('width',0.6);fin.setAttribute('height',0.3);fin.setAttribute('depth',0.04);
+        fin.setAttribute('position',`${-bL/2+0.3} ${baseY+bH+0.15} ${s*bW/2}`);
+        fin.setAttribute('rotation',`0 0 ${s*-20}`);
+        fin.setAttribute('color',d.bodyColor);
+        fin.setAttribute('material','roughness:0.2;metalness:0.6');
+        el.appendChild(fin);
+      });
+    }
+
+    // WHEELS (detailed)
+    const wPos=[
+      {x:bL*0.32,z:bW/2+0.04},{x:bL*0.32,z:-bW/2-0.04},
+      {x:-bL*0.32,z:bW/2+0.04},{x:-bL*0.32,z:-bW/2-0.04}
+    ];
+    wPos.forEach(wp=>{
+      // Tire
+      const tire=document.createElement('a-cylinder');
+      tire.setAttribute('radius',wR);tire.setAttribute('height',0.2);
+      tire.setAttribute('rotation','90 0 0');
+      tire.setAttribute('position',`${wp.x} ${wR} ${wp.z}`);
+      tire.setAttribute('color','#111');tire.setAttribute('material','roughness:0.95');
+      el.appendChild(tire);
+      // Whitewall
+      const ww=document.createElement('a-torus');
+      ww.setAttribute('radius',wR*0.82);ww.setAttribute('radius-tubular',0.025);
+      ww.setAttribute('rotation','90 0 0');
+      ww.setAttribute('position',`${wp.x} ${wR} ${wp.z+(wp.z>0?0.1:-0.1)}`);
+      ww.setAttribute('color','#f5f0e0');ww.setAttribute('material','roughness:0.5');
+      el.appendChild(ww);
+      // Hub
+      const hub=document.createElement('a-cylinder');
+      hub.setAttribute('radius',wR*0.35);hub.setAttribute('height',0.22);
+      hub.setAttribute('rotation','90 0 0');
+      hub.setAttribute('position',`${wp.x} ${wR} ${wp.z}`);
+      hub.setAttribute('color',d.trimColor);hub.setAttribute('material','roughness:0.1;metalness:0.9');
+      el.appendChild(hub);
+    });
+
+    // DOOR LINES
+    [-1,1].forEach(s=>{
+      this.addBox(el,0.02,bH*0.9,0.02,`${d.cabinOffset+cL*0.3} ${baseY+bH*0.55} ${s*bW/2+s*0.01}`,'#111','roughness:0.5');
+      this.addBox(el,0.02,bH*0.9,0.02,`${d.cabinOffset-cL*0.15} ${baseY+bH*0.55} ${s*bW/2+s*0.01}`,'#111','roughness:0.5');
+    });
+
+    // DOOR HANDLES
+    [-1,1].forEach(s=>{
+      this.addBox(el,0.12,0.03,0.02,`${d.cabinOffset+cL*0.1} ${baseY+bH*0.7} ${s*bW/2+s*0.02}`,d.trimColor,'roughness:0.1;metalness:0.9');
+    });
+  },
+  addBox:function(parent,w,h,dp,pos,col,mat,rot){
+    const b=document.createElement('a-box');
+    b.setAttribute('width',w);b.setAttribute('height',h);b.setAttribute('depth',dp);
+    b.setAttribute('position',pos);b.setAttribute('color',col);
+    b.setAttribute('material',mat);
+    if(rot)b.setAttribute('rotation',rot);
+    parent.appendChild(b);
+  }
+});
+
+// ========== CAR DATABASE ==========
+const CLASSICS=[
   {
-    name: 'BMW M3 E30', year: '1986-91',
-    desc: 'El E30 M3 domino el turismo mundial.\\nMotor 4 cil. 2.3L, 200CV.\\nEl sedan deportivo perfecto de los 80.',
-    color: '#f0f0f0', accent: '#222', stripe: '#0066cc', rim: '#ccc',
-    spoiler: false, whaleTail: false, hatch: false, lowSport: false,
-    bL: 3.8, bW: 1.55, bH: 0.55, cL: 1.8, cH: 0.5, cO: 0
+    name:'Ferrari 250 GTO',year:'1962',
+    engine:'V12 3.0L',power:'300 CV',speed:'280 km/h',production:'36 unidades',origin:'Italia 🇮🇹',price:'$70M+',
+    color:'#cc0000',accent:'#222',trim:'#c0c0c0',
+    bL:4.1,bW:1.65,bH:0.48,cL:1.5,cH:0.42,cO:0.3,wR:0.28,hL:1.4,fins:false,round:true
   },
   {
-    name: 'Ford Sierra RS Cosworth', year: '1986',
-    desc: 'La famosa ballena. Turbo 2.0L 204CV.\\nDomino rally y turismo con su\\ninconfundible aleron trasero gigante.',
-    color: '#f5f5f5', accent: '#1a1a1a', stripe: '', rim: '#ddd',
-    spoiler: false, whaleTail: true, hatch: true, lowSport: false,
-    bL: 3.9, bW: 1.6, bH: 0.55, cL: 2.0, cH: 0.5, cO: 0.1
+    name:'Mercedes-Benz 300SL Gullwing',year:'1954',
+    engine:'I6 3.0L Inyección',power:'215 CV',speed:'260 km/h',production:'1400 unidades',origin:'Alemania 🇩🇪',price:'$1.5M+',
+    color:'#d0d0d0',accent:'#333',trim:'#e0e0e0',
+    bL:4.2,bW:1.65,bH:0.5,cL:1.4,cH:0.45,cO:0.2,wR:0.28,hL:1.5,fins:false,round:true
   },
   {
-    name: 'Lancia 037', year: '1982',
-    desc: 'Ultimo coche de traccion trasera en\\nganar el WRC. Supercharged 2.0L 325CV.\\nOro absoluto del rally italiano.',
-    color: '#ffffff', accent: '#cc0000', stripe: '#cc0000', rim: '#ddd',
-    spoiler: true, whaleTail: false, hatch: false, lowSport: true,
-    bL: 3.5, bW: 1.7, bH: 0.45, cL: 1.4, cH: 0.42, cO: 0.2,
-    sH: 0.25
+    name:'Jaguar E-Type',year:'1961',
+    engine:'I6 3.8L',power:'265 CV',speed:'241 km/h',production:'72500 unidades',origin:'Reino Unido 🇬🇧',price:'$150K+',
+    color:'#1a4a1a',accent:'#111',trim:'#c8c8c8',
+    bL:4.4,bW:1.55,bH:0.45,cL:1.3,cH:0.4,cO:0.4,wR:0.27,hL:1.8,fins:false,round:true
   },
   {
-    name: 'Opel Kadett GSi', year: '1988',
-    desc: 'El compacto aleman mas deportivo.\\nMotor 2.0L 156CV. Rival del Golf GTI\\ny favorito en los rallies nacionales.',
-    color: '#cc0000', accent: '#222', stripe: '', rim: '#aaa',
-    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.5, bW: 1.5, bH: 0.52, cL: 1.6, cH: 0.48, cO: 0.15,
-    sH: 0.35
-  },
-  // ROW 2
-  {
-    name: 'Lancia Delta HF Integrale', year: '1987',
-    desc: 'El rey indiscutible del WRC.\\n6 campeonatos consecutivos.\\nTurbo 2.0L 215CV, traccion total.',
-    color: '#cc0000', accent: '#222', stripe: '#ffffff', rim: '#ddd',
-    spoiler: false, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.4, bW: 1.6, bH: 0.55, cL: 1.5, cH: 0.5, cO: 0.15
+    name:'Porsche 911 (1964)',year:'1964',
+    engine:'Flat-6 2.0L',power:'130 CV',speed:'210 km/h',production:'Icónico',origin:'Alemania 🇩🇪',price:'$200K+',
+    color:'#f5f0e0',accent:'#222',trim:'#c0c0c0',
+    bL:3.8,bW:1.55,bH:0.48,cL:1.5,cH:0.45,cO:-0.1,wR:0.27,hL:0.8,fins:false,round:true
   },
   {
-    name: 'Subaru Impreza WRX STI', year: '1994',
-    desc: 'El legendario azul con llantas doradas.\\nBoxer turbo 2.0L 280CV. AWD.\\nEl cohete japones del rally mundial.',
-    color: '#003399', accent: '#222', stripe: '', rim: '#daa520',
-    spoiler: true, whaleTail: false, hatch: false, lowSport: false,
-    bL: 3.8, bW: 1.55, bH: 0.55, cL: 1.7, cH: 0.48, cO: -0.1,
-    sH: 0.5
+    name:'Chevrolet Corvette C1',year:'1957',
+    engine:'V8 4.6L',power:'283 CV',speed:'217 km/h',production:'6339 unidades',origin:'EE.UU. 🇺🇸',price:'$100K+',
+    color:'#e8e0d0',accent:'#cc0000',trim:'#e0e0e0',
+    bL:4.2,bW:1.7,bH:0.45,cL:1.2,cH:0.38,cO:0.3,wR:0.28,hL:1.6,fins:true,round:true
   },
   {
-    name: 'Mitsubishi Lancer Evo VI', year: '1999',
-    desc: 'El rival mortal del Impreza.\\nTurbo 2.0L 280CV, traccion total.\\n6 veces campeon del WRC con Makinen.',
-    color: '#f0f0f0', accent: '#333', stripe: '', rim: '#bbb',
-    spoiler: true, whaleTail: false, hatch: false, lowSport: false,
-    bL: 3.9, bW: 1.55, bH: 0.55, cL: 1.7, cH: 0.48, cO: -0.1,
-    sH: 0.55
+    name:'Aston Martin DB5',year:'1963',
+    engine:'I6 4.0L',power:'282 CV',speed:'233 km/h',production:'1059 unidades',origin:'Reino Unido 🇬🇧',price:'$1M+',
+    color:'#8a8a7a',accent:'#222',trim:'#d0d0d0',
+    bL:4.2,bW:1.6,bH:0.5,cL:1.6,cH:0.45,cO:0.15,wR:0.28,hL:1.3,fins:false,round:true
   },
   {
-    name: 'Toyota Celica GT-Four', year: '1994',
-    desc: 'El coupe rally de Toyota.\\nTurbo 2.0L 255CV. Traccion total.\\nVencedor del WRC con Carlos Sainz.',
-    color: '#f0f0f0', accent: '#cc0000', stripe: '#cc0000', rim: '#ccc',
-    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.7, bW: 1.6, bH: 0.5, cL: 1.6, cH: 0.45, cO: 0.2,
-    sH: 0.4
-  },
-  // ROW 3
-  {
-    name: 'Nissan Pulsar GTI-R', year: '1990',
-    desc: 'El pequeno monstruo de Nissan.\\nTurbo 2.0L 230CV en un compacto.\\nTraccion total. Bala de bolsillo.',
-    color: '#1a1aff', accent: '#222', stripe: '', rim: '#ccc',
-    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.3, bW: 1.5, bH: 0.5, cL: 1.4, cH: 0.45, cO: 0.15,
-    sH: 0.3
+    name:'Ford Mustang GT',year:'1967',
+    engine:'V8 4.7L',power:'225 CV',speed:'193 km/h',production:'Masivo',origin:'EE.UU. 🇺🇸',price:'$80K+',
+    color:'#003366',accent:'#222',trim:'#c0c0c0',
+    bL:4.3,bW:1.7,bH:0.52,cL:1.5,cH:0.45,cO:0.1,wR:0.3,hL:1.3,fins:false,round:true
   },
   {
-    name: 'Mazda 323 GTX', year: '1990',
-    desc: 'La joya oculta de Mazda.\\nTurbo 1.8L 185CV, traccion total.\\nCompacto radical tipo hot-hatch extremo.',
-    color: '#990000', accent: '#222', stripe: '', rim: '#aaa',
-    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.4, bW: 1.5, bH: 0.52, cL: 1.5, cH: 0.46, cO: 0.1,
-    sH: 0.3
+    name:'Lamborghini Miura',year:'1966',
+    engine:'V12 3.9L',power:'350 CV',speed:'280 km/h',production:'764 unidades',origin:'Italia 🇮🇹',price:'$2M+',
+    color:'#ff8c00',accent:'#111',trim:'#c0c0c0',
+    bL:4.1,bW:1.7,bH:0.42,cL:1.3,cH:0.38,cO:0,wR:0.27,hL:1.2,fins:false,round:true
   },
   {
-    name: 'Toyota Corolla WRC', year: '1997',
-    desc: 'El Corolla mas radical de la historia.\\nMotor 2.0L turbo 300CV.\\nDisenado exclusivamente para el WRC.',
-    color: '#ffffff', accent: '#cc0000', stripe: '#cc0000', rim: '#ddd',
-    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.7, bW: 1.55, bH: 0.53, cL: 1.6, cH: 0.48, cO: 0.1,
-    sH: 0.45
+    name:'Alfa Romeo Spider Duetto',year:'1966',
+    engine:'I4 1.6L',power:'109 CV',speed:'185 km/h',production:'Icónico',origin:'Italia 🇮🇹',price:'$60K+',
+    color:'#cc0000',accent:'#111',trim:'#d0d0d0',
+    bL:3.9,bW:1.55,bH:0.42,cL:1.2,cH:0.38,cO:0.2,wR:0.26,hL:1.3,fins:false,round:true
   },
   {
-    name: 'Nissan Skyline GT-R R32', year: '1989',
-    desc: 'GODZILLA. Turbo biturbo RB26 2.6L\\n280CV, traccion total ATTESA.\\nInvicto en el JTCC Australia.',
-    color: '#3a3a3a', accent: '#222', stripe: '', rim: '#bbb',
-    spoiler: true, whaleTail: false, hatch: false, lowSport: false,
-    bL: 3.9, bW: 1.6, bH: 0.55, cL: 1.7, cH: 0.48, cO: -0.05,
-    sH: 0.3
-  },
-  // ROW 4
-  {
-    name: 'Ford Escort RS Cosworth', year: '1992',
-    desc: 'El Escort mas bestia jamas fabricado.\\nTurbo 2.0L 227CV, traccion total.\\nRefined version del Sierra con el aleron.',
-    color: '#f5f5f5', accent: '#003366', stripe: '', rim: '#ddd',
-    spoiler: false, whaleTail: true, hatch: true, lowSport: false,
-    bL: 3.6, bW: 1.55, bH: 0.52, cL: 1.6, cH: 0.48, cO: 0.1
+    name:'Rolls-Royce Silver Cloud',year:'1955',
+    engine:'I6 4.9L',power:'155 CV',speed:'166 km/h',production:'Exclusivo',origin:'Reino Unido 🇬🇧',price:'$200K+',
+    color:'#1a1a1a',accent:'#222',trim:'#e8e0c0',
+    bL:4.6,bW:1.8,bH:0.6,cL:2.0,cH:0.6,cO:-0.1,wR:0.32,hL:1.5,fins:false,round:true
   },
   {
-    name: 'Peugeot 306 Maxi', year: '1996',
-    desc: 'El kit-car frances mas exitoso.\\nAtmoferico 2.0L 280CV. Clase F2.\\nDomino los rallies de asfalto en Europa.',
-    color: '#cc0000', accent: '#222', stripe: '#ffffff', rim: '#ddd',
-    spoiler: true, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.5, bW: 1.55, bH: 0.5, cL: 1.5, cH: 0.45, cO: 0.15,
-    sH: 0.4
+    name:'BMW 507 Roadster',year:'1956',
+    engine:'V8 3.2L',power:'150 CV',speed:'201 km/h',production:'252 unidades',origin:'Alemania 🇩🇪',price:'$2.5M+',
+    color:'#f0f0f0',accent:'#333',trim:'#c0c0c0',
+    bL:4.0,bW:1.6,bH:0.44,cL:1.2,cH:0.4,cO:0.2,wR:0.27,hL:1.4,fins:false,round:true
   },
   {
-    name: 'Renault Clio Williams', year: '1993',
-    desc: 'Homenaje a la F1 de Williams-Renault.\\n2.0L 150CV. Compacto y agil.\\nEl hot-hatch frances por excelencia.',
-    color: '#003399', accent: '#daa520', stripe: '#daa520', rim: '#daa520',
-    spoiler: false, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.2, bW: 1.45, bH: 0.5, cL: 1.4, cH: 0.45, cO: 0.15
-  },
-  {
-    name: 'Peugeot 205 GTI', year: '1984',
-    desc: 'El hot-hatch definitivo de los 80.\\n1.9L 130CV. Chasis perfecto,\\ndireccion quirurgica. Obra maestra.',
-    color: '#666666', accent: '#222', stripe: '#cc0000', rim: '#aaa',
-    spoiler: false, whaleTail: false, hatch: true, lowSport: false,
-    bL: 3.2, bW: 1.45, bH: 0.5, cL: 1.3, cH: 0.45, cO: 0.15
+    name:'Citroën DS',year:'1955',
+    engine:'I4 2.0L',power:'75 CV',speed:'150 km/h',production:'1.5M unidades',origin:'Francia 🇫🇷',price:'$50K+',
+    color:'#2a2a3a',accent:'#222',trim:'#c8c8c8',
+    bL:4.5,bW:1.7,bH:0.52,cL:2.0,cH:0.5,cO:0,wR:0.28,hL:1.0,fins:false,round:true
   }
 ];
 
-// ========== GENERATE SCENE ON LOAD ==========
-document.addEventListener('DOMContentLoaded', () => {
-  const scene = document.querySelector('a-scene');
+// ========== BUILD MUSEUM ==========
+document.addEventListener('DOMContentLoaded',()=>{
+  const scene=document.querySelector('a-scene');
+  const cols=4,spacingX=10,spacingZ=10;
+  const startX=-(cols-1)*spacingX/2;
+  const startZ=-10;
 
-  // Layout: 4 rows of 4 cars
-  const startX = -13.5;
-  const startZ = -8;
-  const spacingX = 9;
-  const spacingZ = 8;
+  CLASSICS.forEach((car,i)=>{
+    const row=Math.floor(i/cols),col=i%cols;
+    const px=startX+col*spacingX, pz=startZ+row*spacingZ;
 
-  CARS.forEach((car, i) => {
-    const row = Math.floor(i / 4);
-    const col = i % 4;
-    const posX = startX + col * spacingX;
-    const posZ = startZ + row * spacingZ;
+    // Pedestal group
+    const group=document.createElement('a-entity');
+    group.setAttribute('position',`${px} 0 ${pz}`);
 
-    // Platform
-    const platform = document.createElement('a-entity');
-    platform.setAttribute('position', `${posX} 0 ${posZ}`);
+    // Marble pedestal base
+    const base=document.createElement('a-cylinder');
+    base.setAttribute('radius',2.8);base.setAttribute('height',0.2);
+    base.setAttribute('position','0 0.1 0');
+    base.setAttribute('color','#1a1a22');
+    base.setAttribute('material','roughness:0.12;metalness:0.7');
+    group.appendChild(base);
 
-    // Platform base
-    const base = document.createElement('a-box');
-    base.setAttribute('width', 5.5);
-    base.setAttribute('height', 0.12);
-    base.setAttribute('depth', 3);
-    base.setAttribute('position', '0 0.06 0');
-    base.setAttribute('color', '#1a1a1a');
-    base.setAttribute('material', 'roughness: 0.15; metalness: 0.7');
-    platform.appendChild(base);
+    // Gold ring
+    const ring=document.createElement('a-torus');
+    ring.setAttribute('radius',2.8);ring.setAttribute('radius-tubular',0.03);
+    ring.setAttribute('rotation','90 0 0');ring.setAttribute('position','0 0.21 0');
+    ring.setAttribute('color','#d4af37');
+    ring.setAttribute('material','roughness:0.15;metalness:0.9');
+    group.appendChild(ring);
 
-    // Platform accent border
-    const border = document.createElement('a-box');
-    border.setAttribute('width', 5.7);
-    border.setAttribute('height', 0.06);
-    border.setAttribute('depth', 3.2);
-    border.setAttribute('position', '0 0.01 0');
-    border.setAttribute('color', '#ff6a00');
-    border.setAttribute('material', 'roughness: 0.3; metalness: 0.5');
-    platform.appendChild(border);
+    // Inner platform (glass effect)
+    const inner=document.createElement('a-cylinder');
+    inner.setAttribute('radius',2.5);inner.setAttribute('height',0.06);
+    inner.setAttribute('position','0 0.22 0');
+    inner.setAttribute('color','#111118');
+    inner.setAttribute('material','roughness:0.05;metalness:0.8');
+    group.appendChild(inner);
 
-    // The car entity
-    const carEntity = document.createElement('a-entity');
-    carEntity.setAttribute('position', '0 0.13 0');
-    carEntity.setAttribute('rotation', '0 90 0');
-    carEntity.setAttribute('lowpoly-car', {
-      bodyColor: car.color,
-      accentColor: car.accent,
-      rimColor: car.rim,
-      stripeColor: car.stripe || '',
-      hasSpoiler: car.spoiler,
-      spoilerHeight: car.sH || 0.4,
-      hasWhaleTail: car.whaleTail,
-      isHatchback: car.hatch,
-      isLowSport: car.lowSport || false,
-      bodyLength: car.bL,
-      bodyWidth: car.bW,
-      bodyHeight: car.bH,
-      cabinLength: car.cL,
-      cabinHeight: car.cH,
-      cabinOffset: car.cO
+    // Rotating car wrapper
+    const rotator=document.createElement('a-entity');
+    rotator.setAttribute('position','0 0.25 0');
+    rotator.setAttribute('rotate-pedestal','speed:0.12');
+
+    // Car entity
+    const carEnt=document.createElement('a-entity');
+    carEnt.setAttribute('rotation','0 90 0');
+    carEnt.setAttribute('class','clickable');
+    carEnt.setAttribute('car-info',{
+      name:car.name,year:car.year,engine:car.engine,power:car.power,
+      speed:car.speed,production:car.production,origin:car.origin,price:car.price
     });
-    platform.appendChild(carEntity);
+    carEnt.setAttribute('classic-car',{
+      bodyColor:car.color,accentColor:car.accent,trimColor:car.trim,
+      bodyLength:car.bL,bodyWidth:car.bW,bodyHeight:car.bH,
+      cabinLength:car.cL,cabinHeight:car.cH,cabinOffset:car.cO,
+      wheelRadius:car.wR,hoodLength:car.hL,hasFins:car.fins,
+      hasRoundHeadlights:car.round
+    });
+    rotator.appendChild(carEnt);
+    group.appendChild(rotator);
 
-    // Spot light per car
-    const spot = document.createElement('a-light');
-    spot.setAttribute('type', 'spot');
-    spot.setAttribute('color', '#ffffff');
-    spot.setAttribute('intensity', '1.5');
-    spot.setAttribute('position', '0 6 0');
-    spot.setAttribute('rotation', '-90 0 0');
-    spot.setAttribute('angle', '35');
-    spot.setAttribute('penumbra', '0.6');
-    platform.appendChild(spot);
+    // SPOTLIGHT per car
+    const spot=document.createElement('a-light');
+    spot.setAttribute('type','spot');spot.setAttribute('color','#fffaf0');
+    spot.setAttribute('intensity','2');spot.setAttribute('position','0 7 0');
+    spot.setAttribute('rotation','-90 0 0');spot.setAttribute('angle','30');
+    spot.setAttribute('penumbra','0.5');spot.setAttribute('decay','1.5');
+    group.appendChild(spot);
 
-    // Small point light beneath for glow
-    const glow = document.createElement('a-light');
-    glow.setAttribute('type', 'point');
-    glow.setAttribute('color', '#ff6a00');
-    glow.setAttribute('intensity', '0.15');
-    glow.setAttribute('distance', '4');
-    glow.setAttribute('position', '0 0.3 0');
-    platform.appendChild(glow);
+    // Gold glow underneath
+    const glow=document.createElement('a-light');
+    glow.setAttribute('type','point');glow.setAttribute('color','#d4af37');
+    glow.setAttribute('intensity','0.12');glow.setAttribute('distance','4');
+    glow.setAttribute('position','0 0.3 0');
+    group.appendChild(glow);
 
-    // ---- DESCRIPTIVE PLAQUE ----
-    const plaque = document.createElement('a-entity');
-    plaque.setAttribute('position', '0 1.1 -1.9');
+    // NAME PLAQUE
+    const plaque=document.createElement('a-entity');
+    plaque.setAttribute('position','0 0.8 -3.2');
 
-    const plaqueBack = document.createElement('a-plane');
-    plaqueBack.setAttribute('width', '3.2');
-    plaqueBack.setAttribute('height', '1.1');
-    plaqueBack.setAttribute('color', '#111111');
-    plaqueBack.setAttribute('material', 'roughness: 0.5');
-    plaque.appendChild(plaqueBack);
+    const pBack=document.createElement('a-plane');
+    pBack.setAttribute('width',3.5);pBack.setAttribute('height',1.2);
+    pBack.setAttribute('color','#0c0c14');pBack.setAttribute('material','roughness:0.3');
+    plaque.appendChild(pBack);
 
-    const plaqueBorder = document.createElement('a-plane');
-    plaqueBorder.setAttribute('width', '3.3');
-    plaqueBorder.setAttribute('height', '1.2');
-    plaqueBorder.setAttribute('color', '#ff6a00');
-    plaqueBorder.setAttribute('material', 'roughness: 0.3');
-    plaqueBorder.setAttribute('position', '0 0 -0.005');
-    plaque.appendChild(plaqueBorder);
+    const pBorder=document.createElement('a-plane');
+    pBorder.setAttribute('width',3.6);pBorder.setAttribute('height',1.3);
+    pBorder.setAttribute('color','#d4af37');pBorder.setAttribute('position','0 0 -0.005');
+    plaque.appendChild(pBorder);
 
-    // Title
-    const title = document.createElement('a-text');
-    title.setAttribute('value', `${car.name} (${car.year})`);
-    title.setAttribute('align', 'center');
-    title.setAttribute('position', '0 0.3 0.02');
-    title.setAttribute('width', '3');
-    title.setAttribute('color', '#ff6a00');
-    title.setAttribute('font', 'mozillavr');
-    plaque.appendChild(title);
+    const nameT=document.createElement('a-text');
+    nameT.setAttribute('value',car.name);nameT.setAttribute('align','center');
+    nameT.setAttribute('position','0 0.25 0.02');nameT.setAttribute('width',3.2);
+    nameT.setAttribute('color','#d4af37');nameT.setAttribute('font','mozillavr');
+    plaque.appendChild(nameT);
 
-    // Description
-    const desc = document.createElement('a-text');
-    desc.setAttribute('value', car.desc);
-    desc.setAttribute('align', 'center');
-    desc.setAttribute('position', '0 -0.1 0.02');
-    desc.setAttribute('width', '2.5');
-    desc.setAttribute('color', '#e0e0e0');
-    plaque.appendChild(desc);
+    const yearT=document.createElement('a-text');
+    yearT.setAttribute('value',car.year+' · '+car.origin);
+    yearT.setAttribute('align','center');yearT.setAttribute('position','0 0 0.02');
+    yearT.setAttribute('width',2.5);yearT.setAttribute('color','#e0e0e0');
+    plaque.appendChild(yearT);
 
-    platform.appendChild(plaque);
-    scene.appendChild(platform);
+    const engT=document.createElement('a-text');
+    engT.setAttribute('value',car.engine+' — '+car.power);
+    engT.setAttribute('align','center');engT.setAttribute('position','0 -0.25 0.02');
+    engT.setAttribute('width',2.2);engT.setAttribute('color','#999');
+    plaque.appendChild(engT);
+
+    group.appendChild(plaque);
+    scene.appendChild(group);
   });
 });
 </script>
 
-<!-- CÁMARA Y CONTROLES VR -->
-<a-entity position="0 1.6 28">
-  <a-camera look-controls wasd-controls="acceleration: 100">
-    <a-cursor color="#ff6a00" fuse="false"></a-cursor>
+<!-- CAMERA & VR -->
+<a-entity position="0 1.6 22">
+  <a-camera look-controls wasd-controls="acceleration:100" cursor="rayOrigin:mouse" raycaster="objects:.clickable">
+    <a-cursor color="#d4af37" fuse="false"></a-cursor>
   </a-camera>
 </a-entity>
-<a-entity laser-controls="hand: left"></a-entity>
-<a-entity laser-controls="hand: right"></a-entity>
+<a-entity laser-controls="hand:left" raycaster="objects:.clickable"></a-entity>
+<a-entity laser-controls="hand:right" raycaster="objects:.clickable"></a-entity>
 
-<!-- ============ ILUMINACIÓN DE TALLER ============ -->
-<a-light type="ambient" color="#303030" intensity="1.2"></a-light>
+<!-- ============ LIGHTING ============ -->
+<a-light type="ambient" color="#1a1a2e" intensity="0.8"></a-light>
+<a-light type="directional" intensity="0.25" position="5 12 5" color="#fffaf0"></a-light>
+<a-light type="directional" intensity="0.15" position="-5 10 -5" color="#ccddff"></a-light>
 
-<!-- Luces de techo tipo nave industrial (fluorescentes) - Fila 1 -->
-<a-light type="point" intensity="0.4" position="-10 8 -8" distance="20" color="#fff"></a-light>
-<a-light type="point" intensity="0.4" position="0 8 -8" distance="20" color="#fff"></a-light>
-<a-light type="point" intensity="0.4" position="10 8 -8" distance="20" color="#fff"></a-light>
-<!-- Fila 2 -->
-<a-light type="point" intensity="0.4" position="-10 8 0" distance="20" color="#fff"></a-light>
-<a-light type="point" intensity="0.4" position="0 8 0" distance="20" color="#ffe8cc"></a-light>
-<a-light type="point" intensity="0.4" position="10 8 0" distance="20" color="#fff"></a-light>
-<!-- Fila 3 -->
-<a-light type="point" intensity="0.4" position="-10 8 8" distance="20" color="#fff"></a-light>
-<a-light type="point" intensity="0.4" position="0 8 8" distance="20" color="#fff"></a-light>
-<a-light type="point" intensity="0.4" position="10 8 8" distance="20" color="#fff"></a-light>
-<!-- Fila 4 -->
-<a-light type="point" intensity="0.4" position="-10 8 16" distance="20" color="#ffe8cc"></a-light>
-<a-light type="point" intensity="0.4" position="0 8 16" distance="20" color="#fff"></a-light>
-<a-light type="point" intensity="0.4" position="10 8 16" distance="20" color="#fff"></a-light>
+<!-- Ceiling lights -->
+<a-light type="point" intensity="0.3" position="-14 9 -10" distance="25" color="#fffaf0"></a-light>
+<a-light type="point" intensity="0.3" position="0 9 -10" distance="25" color="#fffaf0"></a-light>
+<a-light type="point" intensity="0.3" position="14 9 -10" distance="25" color="#fffaf0"></a-light>
+<a-light type="point" intensity="0.3" position="-14 9 0" distance="25" color="#fffaf0"></a-light>
+<a-light type="point" intensity="0.3" position="0 9 0" distance="25" color="#fffaf0"></a-light>
+<a-light type="point" intensity="0.3" position="14 9 0" distance="25" color="#fffaf0"></a-light>
+<a-light type="point" intensity="0.3" position="-14 9 10" distance="25" color="#fffaf0"></a-light>
+<a-light type="point" intensity="0.3" position="0 9 10" distance="25" color="#fffaf0"></a-light>
+<a-light type="point" intensity="0.3" position="14 9 10" distance="25" color="#fffaf0"></a-light>
 
-<!-- Directional key light -->
-<a-light type="directional" intensity="0.3" position="5 10 5" color="#ffffff"></a-light>
+<!-- ============ ARCHITECTURE ============ -->
 
-<!-- Lámparas de techo visibles (carcasas) -->
-<a-entity id="ceiling-lamps">
-  <!-- Las lámparas colgantes tipo taller -->
-  <a-box position="-10 7.8 -8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="0 7.8 -8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="10 7.8 -8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="-10 7.8 0" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="0 7.8 0" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="10 7.8 0" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="-10 7.8 8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="0 7.8 8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="10 7.8 8" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="-10 7.8 16" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="0 7.8 16" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
-  <a-box position="10 7.8 16" width="1.5" height="0.08" depth="0.4" color="#444" material="metalness: 0.6"></a-box>
+<!-- FLOOR - dark marble -->
+<a-plane rotation="-90 0 0" position="0 0 0" width="50" height="50" color="#0e0e16"
+  material="roughness:0.1;metalness:0.7"></a-plane>
+<!-- Floor accent lines gold -->
+<a-plane rotation="-90 0 0" position="-5 0.005 0" width="0.04" height="50" color="#d4af37"></a-plane>
+<a-plane rotation="-90 0 0" position="5 0.005 0" width="0.04" height="50" color="#d4af37"></a-plane>
+<a-plane rotation="-90 0 0" position="-15 0.005 0" width="0.04" height="50" color="#d4af37"></a-plane>
+<a-plane rotation="-90 0 0" position="15 0.005 0" width="0.04" height="50" color="#d4af37"></a-plane>
+
+<!-- CEILING -->
+<a-plane rotation="90 0 0" position="0 10 0" width="50" height="50" color="#0a0a12"
+  material="roughness:0.8"></a-plane>
+
+<!-- Ceiling lamp fixtures -->
+<a-entity id="lamps">
+  <a-box position="-14 9.6 -10" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
+  <a-box position="0 9.6 -10" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
+  <a-box position="14 9.6 -10" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
+  <a-box position="-14 9.6 0" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
+  <a-box position="0 9.6 0" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
+  <a-box position="14 9.6 0" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
+  <a-box position="-14 9.6 10" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
+  <a-box position="0 9.6 10" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
+  <a-box position="14 9.6 10" width="2" height="0.06" depth="0.4" color="#333" material="metalness:0.7"></a-box>
 </a-entity>
 
-<!-- ============ ARQUITECTURA ============ -->
+<!-- WALLS -->
+<!-- Front wall -->
+<a-box position="0 5 -18" width="50" height="10" depth="0.4" color="#12121e" material="roughness:0.6"></a-box>
+<!-- Back wall -->
+<a-box position="0 5 25" width="50" height="10" depth="0.4" color="#12121e" material="roughness:0.6"></a-box>
+<!-- Left wall -->
+<a-box position="-25 5 0" width="0.4" height="10" depth="50" color="#12121e" material="roughness:0.6"></a-box>
+<!-- Right wall -->
+<a-box position="25 5 0" width="0.4" height="10" depth="50" color="#12121e" material="roughness:0.6"></a-box>
 
-<!-- SUELO MODULAR DE COCHERA -->
-<!-- Centro gris/negro -->
-<a-plane rotation="-90 0 0" position="0 0 5" width="32" height="36" color="#1a1a1a" material="roughness: 0.15; metalness: 0.6"></a-plane>
-<!-- Bordes naranja izquierdo -->
-<a-plane rotation="-90 0 0" position="-18 0.005 5" width="4" height="36" color="#ff6a00" material="roughness: 0.4; metalness: 0.3"></a-plane>
-<!-- Bordes naranja derecho -->
-<a-plane rotation="-90 0 0" position="18 0.005 5" width="4" height="36" color="#ff6a00" material="roughness: 0.4; metalness: 0.3"></a-plane>
-<!-- Borde naranja frontal -->
-<a-plane rotation="-90 0 0" position="0 0.005 -13" width="40" height="2" color="#ff6a00" material="roughness: 0.4; metalness: 0.3"></a-plane>
-<!-- Borde naranja trasero -->
-<a-plane rotation="-90 0 0" position="0 0.005 25" width="40" height="4" color="#ff6a00" material="roughness: 0.4; metalness: 0.3"></a-plane>
-<!-- Lineas del suelo tipo parking -->
-<a-plane rotation="-90 0 0" position="-4.5 0.01 5" width="0.08" height="34" color="#ff6a00" material="opacity: 0.5"></a-plane>
-<a-plane rotation="-90 0 0" position="4.5 0.01 5" width="0.08" height="34" color="#ff6a00" material="opacity: 0.5"></a-plane>
-<a-plane rotation="-90 0 0" position="-13.5 0.01 5" width="0.08" height="34" color="#ff6a00" material="opacity: 0.5"></a-plane>
-<a-plane rotation="-90 0 0" position="13.5 0.01 5" width="0.08" height="34" color="#ff6a00" material="opacity: 0.5"></a-plane>
+<!-- Wall accent gold trim -->
+<a-box position="0 0.5 -17.75" width="50" height="0.06" depth="0.02" color="#d4af37" material="metalness:0.9"></a-box>
+<a-box position="0 0.5 24.75" width="50" height="0.06" depth="0.02" color="#d4af37" material="metalness:0.9"></a-box>
+<a-box position="-24.75 0.5 0" width="0.02" height="0.06" depth="50" color="#d4af37" material="metalness:0.9"></a-box>
+<a-box position="24.75 0.5 0" width="0.02" height="0.06" depth="50" color="#d4af37" material="metalness:0.9"></a-box>
 
-<!-- TECHO -->
-<a-plane rotation="90 0 0" position="0 8 5" width="42" height="40" color="#1c1c1c" material="roughness: 1"></a-plane>
+<!-- COLUMNS (marble pillars) -->
+<a-cylinder position="-22 5 -15" radius="0.5" height="10" color="#1a1a26" material="roughness:0.2;metalness:0.5"></a-cylinder>
+<a-cylinder position="22 5 -15" radius="0.5" height="10" color="#1a1a26" material="roughness:0.2;metalness:0.5"></a-cylinder>
+<a-cylinder position="-22 5 0" radius="0.5" height="10" color="#1a1a26" material="roughness:0.2;metalness:0.5"></a-cylinder>
+<a-cylinder position="22 5 0" radius="0.5" height="10" color="#1a1a26" material="roughness:0.2;metalness:0.5"></a-cylinder>
+<a-cylinder position="-22 5 15" radius="0.5" height="10" color="#1a1a26" material="roughness:0.2;metalness:0.5"></a-cylinder>
+<a-cylinder position="22 5 15" radius="0.5" height="10" color="#1a1a26" material="roughness:0.2;metalness:0.5"></a-cylinder>
 
-<!-- PAREDES BLANCAS/LUMINOSAS -->
-<!-- Pared frontal (blanca suave) -->
-<a-box position="0 4 -14" width="42" height="8" depth="0.5" color="#e8e8e8" material="roughness: 0.7"></a-box>
-<!-- Pared trasera (blanca suave) -->
-<a-box position="0 4 27" width="42" height="8" depth="0.5" color="#f0f0f0" material="roughness: 0.7"></a-box>
-<!-- Pared derecha (blanca suave) -->
-<a-box position="21 4 5" width="0.5" height="8" depth="42" color="#e8e8e8" material="roughness: 0.7"></a-box>
+<!-- Column gold rings -->
+<a-torus position="-22 0.3 -15" radius="0.55" radius-tubular="0.03" rotation="90 0 0" color="#d4af37" material="metalness:0.9"></a-torus>
+<a-torus position="22 0.3 -15" radius="0.55" radius-tubular="0.03" rotation="90 0 0" color="#d4af37" material="metalness:0.9"></a-torus>
+<a-torus position="-22 0.3 0" radius="0.55" radius-tubular="0.03" rotation="90 0 0" color="#d4af37" material="metalness:0.9"></a-torus>
+<a-torus position="22 0.3 0" radius="0.55" radius-tubular="0.03" rotation="90 0 0" color="#d4af37" material="metalness:0.9"></a-torus>
+<a-torus position="-22 0.3 15" radius="0.55" radius-tubular="0.03" rotation="90 0 0" color="#d4af37" material="metalness:0.9"></a-torus>
+<a-torus position="22 0.3 15" radius="0.55" radius-tubular="0.03" rotation="90 0 0" color="#d4af37" material="metalness:0.9"></a-torus>
 
-<!-- ============ PARED GRAFFITI (Pared Izquierda) ============ -->
-<a-box position="-21 4 5" width="0.5" height="8" depth="42" color="#ddd" material="roughness: 0.8"></a-box>
-
-<!-- Graffiti: Formas geométricas coloridas, letras urbanas, salpicaduras abstractas -->
-<!-- Fondo splash zones -->
-<a-plane position="-20.7 4.5 -4" rotation="0 90 0" width="8" height="4" color="#ff3366" material="opacity: 0.7; transparent: true"></a-plane>
-<a-plane position="-20.7 3.5 6" rotation="0 90 0" width="6" height="3" color="#00ccff" material="opacity: 0.6; transparent: true"></a-plane>
-<a-plane position="-20.7 5 14" rotation="0 90 0" width="7" height="3.5" color="#ffcc00" material="opacity: 0.6; transparent: true"></a-plane>
-
-<!-- Graffiti triangles -->
-<a-triangle position="-20.7 5.5 -2" rotation="0 90 0" vertex-a="0 1.5 0" vertex-b="-1.5 0 0" vertex-c="1.5 0 0" color="#33ff66" material="opacity: 0.8; transparent: true; side: double"></a-triangle>
-<a-triangle position="-20.7 3 10" rotation="0 90 0" vertex-a="0 2 0" vertex-b="-2 0 0" vertex-c="1 0 0" color="#ff6600" material="opacity: 0.7; transparent: true; side: double"></a-triangle>
-
-<!-- Graffiti circles / bubbles -->
-<a-circle position="-20.7 6 2" rotation="0 90 0" radius="1.2" color="#cc33ff" material="opacity: 0.6; transparent: true"></a-circle>
-<a-circle position="-20.7 2.5 -6" rotation="0 90 0" radius="0.8" color="#ff3366" material="opacity: 0.7; transparent: true"></a-circle>
-<a-circle position="-20.7 5.5 18" rotation="0 90 0" radius="1" color="#00ff99" material="opacity: 0.5; transparent: true"></a-circle>
-<a-circle position="-20.7 3 16" rotation="0 90 0" radius="0.6" color="#ff0066" material="opacity: 0.8; transparent: true"></a-circle>
-
-<!-- Graffiti stripes / drips -->
-<a-plane position="-20.7 2 -3" rotation="0 90 0" width="0.3" height="3" color="#ff3366" material="opacity: 0.7; transparent: true"></a-plane>
-<a-plane position="-20.7 2.5 1" rotation="0 90 0" width="0.2" height="2.5" color="#00ccff" material="opacity: 0.6; transparent: true"></a-plane>
-<a-plane position="-20.7 2 8" rotation="0 90 0" width="0.25" height="3.5" color="#ffcc00" material="opacity: 0.7; transparent: true"></a-plane>
-<a-plane position="-20.7 2.2 14" rotation="0 90 0" width="0.15" height="2" color="#33ff66" material="opacity: 0.6; transparent: true"></a-plane>
-
-<!-- Letras graffiti (textos urbanos estilizados) -->
-<a-text value="RALLY" position="-20.65 6.5 -5" rotation="0 90 0" width="14" color="#ffffff" font="mozillavr"></a-text>
-<a-text value="LEGENDS" position="-20.65 5.8 -4" rotation="0 90 0" width="12" color="#ffcc00" font="mozillavr"></a-text>
-<a-text value="WRC" position="-20.65 6 8" rotation="0 90 0" width="18" color="#ff3366" font="mozillavr"></a-text>
-<a-text value="TURBO" position="-20.65 4 12" rotation="0 90 0" width="10" color="#00ccff" font="mozillavr"></a-text>
-<a-text value="GROUP A" position="-20.65 3 -8" rotation="0 90 0" width="8" color="#33ff66" font="mozillavr"></a-text>
-<a-text value="80s 90s" position="-20.65 6.5 16" rotation="0 90 0" width="10" color="#cc33ff" font="mozillavr"></a-text>
-
-<!-- Graffiti splatter boxes -->
-<a-box position="-20.7 4 -9" rotation="0 90 35" width="2" height="0.8" depth="0.02" color="#ff6600" material="opacity: 0.5; transparent: true"></a-box>
-<a-box position="-20.7 5 20" rotation="0 90 -20" width="3" height="1" depth="0.02" color="#00ccff" material="opacity: 0.4; transparent: true"></a-box>
-
-<!-- ============ SEÑAL DE ENTRADA ============ -->
-<a-entity position="0 6.5 26">
-  <a-plane width="12" height="2" color="#111"></a-plane>
-  <a-plane width="12.2" height="2.2" color="#ff6a00" position="0 0 -0.02"></a-plane>
-  <a-text value="EXPOSICION DE CLASICOS DEL RALLY" align="center" position="0 0.2 0.02" width="10" color="#ff6a00" font="mozillavr"></a-text>
-  <a-text value="Coches de los 80s y 90s   |   Grupo A & WRC" align="center" position="0 -0.4 0.02" width="8" color="#e0e0e0"></a-text>
+<!-- ============ ENTRANCE SIGN ============ -->
+<a-entity position="0 7.5 24">
+  <a-plane width="16" height="2.5" color="#0c0c14" material="roughness:0.3"></a-plane>
+  <a-plane width="16.2" height="2.7" color="#d4af37" position="0 0 -0.02" material="metalness:0.8"></a-plane>
+  <a-text value="MUSEO DE COCHES CLÁSICOS LEGENDARIOS" align="center" position="0 0.35 0.02" width="13" color="#d4af37" font="mozillavr"></a-text>
+  <a-text value="Obras Maestras del Automóvil  ·  Ferrari  ·  Mercedes  ·  Jaguar  ·  Porsche" align="center" position="0 -0.35 0.02" width="10" color="#ccc"></a-text>
+  <a-text value="▸ Haz click en un coche para ver sus especificaciones ◂" align="center" position="0 -0.85 0.02" width="7" color="#d4af37"></a-text>
 </a-entity>
 
 </a-scene>
