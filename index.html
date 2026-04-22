@@ -1,605 +1,1016 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Museo VR — Automóviles Antiguos Reales</title>
-  <meta name="description" content="Museo virtual 3D inmersivo con automóviles antiguos reales del 1886 al 1940. Maquetas 3D detalladas.">
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <style>
-    body{margin:0;padding:0;background:#000;overflow:hidden}
-    #loading{position:fixed;inset:0;background:linear-gradient(135deg,#0a0806,#1a1510);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 1.5s}
-    #loading h1{color:#c8a44e;font-family:Georgia,serif;font-size:2.6em;letter-spacing:6px}
-    #loading p{color:#887755;font-size:1em;letter-spacing:4px;font-family:Georgia,serif}
-    .bar{width:180px;height:2px;background:linear-gradient(90deg,transparent,#c8a44e,transparent);margin:18px 0;animation:glow 2s infinite}
-    @keyframes glow{0%,100%{opacity:.2}50%{opacity:1}}
-    #info-panel{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(15,12,8,.95);border:1px solid #c8a44e;border-radius:10px;padding:22px 32px;color:#f0e8d8;z-index:100;display:none;max-width:520px;backdrop-filter:blur(12px);text-align:center;font-family:Georgia,serif}
-    #info-panel h2{color:#c8a44e;margin:0 0 10px;font-size:1.4em;letter-spacing:2px}
-    #info-panel .specs{color:#bba880;font-size:.92em;line-height:1.7}
-    #info-panel .close{position:absolute;top:6px;right:14px;color:#c8a44e;cursor:pointer;font-size:1.3em;background:none;border:none;font-family:Georgia,serif}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Museo VR — Coches Clásicos</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@100;300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { overflow: hidden; background: #000; font-family: 'Josefin Sans', sans-serif; }
+
+  #canvas { display: block; }
+
+  /* HUD */
+  #hud {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
+  }
+
+  #title-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 24px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+  }
+  #museum-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; letter-spacing: 3px; color: #c8a96e;
+    text-transform: uppercase;
+  }
+  #museum-sub {
+    font-size: 10px; letter-spacing: 6px; color: rgba(200,169,110,0.6);
+    text-transform: uppercase; margin-top: 2px;
+  }
+
+  #controls-hint {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 28px; align-items: center;
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(200,169,110,0.2);
+    padding: 12px 28px; backdrop-filter: blur(8px);
+    color: rgba(255,255,255,0.5); font-size: 11px; letter-spacing: 2px;
+  }
+  .hint-key {
+    background: rgba(200,169,110,0.15); border: 1px solid rgba(200,169,110,0.3);
+    padding: 3px 8px; color: #c8a96e; font-size: 10px; letter-spacing: 1px;
+  }
+
+  /* Car info panel */
+  #info-panel {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 340px; pointer-events: all;
+    background: rgba(5,5,10,0.88);
+    border-left: 1px solid rgba(200,169,110,0.3);
+    border-top: 1px solid rgba(200,169,110,0.15);
+    border-bottom: 1px solid rgba(200,169,110,0.15);
+    backdrop-filter: blur(20px);
+    padding: 40px 36px;
+    opacity: 0; transition: opacity 0.5s, transform 0.5s;
+    transform: translateY(-50%) translateX(20px);
+  }
+  #info-panel.visible {
+    opacity: 1; transform: translateY(-50%) translateX(0);
+  }
+  #info-year {
+    font-size: 11px; letter-spacing: 5px; color: #c8a96e;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  #info-name {
+    font-family: 'Playfair Display', serif; font-size: 32px;
+    color: #fff; line-height: 1.1; margin-bottom: 6px;
+  }
+  #info-brand {
+    font-size: 11px; letter-spacing: 4px; color: rgba(255,255,255,0.4);
+    text-transform: uppercase; margin-bottom: 28px;
+  }
+  .info-divider {
+    width: 40px; height: 1px; background: #c8a96e; margin-bottom: 24px;
+  }
+  #info-desc {
+    font-size: 13px; line-height: 1.8; color: rgba(255,255,255,0.65);
+    margin-bottom: 28px;
+  }
+  .info-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  .spec-item { border-top: 1px solid rgba(200,169,110,0.15); padding-top: 12px; }
+  .spec-label { font-size: 9px; letter-spacing: 3px; color: rgba(200,169,110,0.6); text-transform: uppercase; margin-bottom: 4px; }
+  .spec-value { font-size: 16px; color: #fff; font-weight: 300; letter-spacing: 1px; }
+
+  #car-nav {
+    display: flex; gap: 8px; justify-content: center;
+  }
+  .nav-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(200,169,110,0.2); border: 1px solid rgba(200,169,110,0.4);
+    cursor: pointer; transition: all 0.3s;
+  }
+  .nav-dot.active { background: #c8a96e; }
+
+  /* Crosshair */
+  #crosshair {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px; height: 20px;
+  }
+  #crosshair::before, #crosshair::after {
+    content: ''; position: absolute; background: rgba(200,169,110,0.5);
+  }
+  #crosshair::before { width: 1px; height: 100%; left: 50%; top: 0; }
+  #crosshair::after { width: 100%; height: 1px; top: 50%; left: 0; }
+
+  /* Minimap */
+  #minimap {
+    position: absolute; bottom: 80px; left: 32px;
+    width: 120px; height: 80px;
+    background: rgba(0,0,0,0.6); border: 1px solid rgba(200,169,110,0.2);
+    backdrop-filter: blur(8px); overflow: hidden;
+  }
+  #minimap canvas { width: 100%; height: 100%; }
+
+  /* Loading */
+  #loader {
+    position: fixed; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; transition: opacity 1s;
+  }
+  #loader.hidden { opacity: 0; pointer-events: none; }
+  .loader-title {
+    font-family: 'Playfair Display', serif; font-size: 42px; color: #c8a96e;
+    letter-spacing: 6px; margin-bottom: 8px;
+  }
+  .loader-sub {
+    font-size: 10px; letter-spacing: 8px; color: rgba(200,169,110,0.5);
+    text-transform: uppercase; margin-bottom: 48px;
+  }
+  .loader-bar-wrap {
+    width: 200px; height: 1px; background: rgba(200,169,110,0.2);
+  }
+  .loader-bar {
+    height: 1px; background: #c8a96e; width: 0;
+    transition: width 2s ease;
+  }
+  .loader-hint {
+    margin-top: 32px; font-size: 10px; letter-spacing: 3px;
+    color: rgba(255,255,255,0.3); text-transform: uppercase;
+  }
+
+  /* Enter btn */
+  #enter-btn {
+    margin-top: 32px; padding: 14px 48px;
+    background: transparent; border: 1px solid #c8a96e;
+    color: #c8a96e; font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.3s; display: none;
+  }
+  #enter-btn:hover { background: #c8a96e; color: #000; }
+
+  #selected-car {
+    position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; letter-spacing: 4px; color: rgba(200,169,110,0.7);
+    text-transform: uppercase; text-align: center;
+    background: rgba(0,0,0,0.5); padding: 8px 20px;
+    border: 1px solid rgba(200,169,110,0.2);
+    backdrop-filter: blur(8px);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  #selected-car.show { opacity: 1; }
+</style>
 </head>
 <body>
 
-<div id="loading">
-  <h1>Automóviles Antiguos</h1>
-  <div class="bar"></div>
-  <p>Cargando museo · 1886–1940</p>
+<!-- Loader -->
+<div id="loader">
+  <div class="loader-title">MUSEO</div>
+  <div class="loader-sub">Coches Clásicos · Colección Permanente</div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+  <div class="loader-hint" id="loader-hint">Construyendo museo...</div>
+  <button id="enter-btn" onclick="enterMuseum()">Entrar al Museo</button>
 </div>
 
-<div id="info-panel">
-  <button class="close" onclick="this.parentElement.style.display='none'">&times;</button>
-  <h2 id="pName"></h2>
-  <div id="pSpecs" class="specs"></div>
+<!-- Canvas -->
+<canvas id="canvas"></canvas>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="title-bar">
+    <div>
+      <div id="museum-name">Museo Automovilístico</div>
+      <div id="museum-sub">Colección de Vehículos Históricos</div>
+    </div>
+    <div style="font-size:10px;letter-spacing:3px;color:rgba(200,169,110,0.5);">EST. MMXXV</div>
+  </div>
+
+  <div id="crosshair"></div>
+
+  <div id="info-panel">
+    <div id="info-year"></div>
+    <div id="info-name"></div>
+    <div id="info-brand"></div>
+    <div class="info-divider"></div>
+    <div id="info-desc"></div>
+    <div class="info-specs" id="info-specs"></div>
+    <div id="car-nav"></div>
+  </div>
+
+  <div id="selected-car">Haz clic para ver información</div>
+
+  <div id="controls-hint">
+    <span><span class="hint-key">W A S D</span> Mover</span>
+    <span><span class="hint-key">RATÓN</span> Mirar</span>
+    <span><span class="hint-key">CLIC</span> Seleccionar</span>
+    <span><span class="hint-key">ESC</span> Soltar cursor</span>
+  </div>
 </div>
 
-<a-scene renderer="antialias:true;colorManagement:true" fog="type:exponential;color:#0a0806;density:0.01" loading-screen="enabled:false">
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-document.querySelector('a-scene').addEventListener('loaded',()=>{
-  const l=document.getElementById('loading');
-  l.style.opacity='0';setTimeout(()=>l.remove(),1600);
-});
-
-// ===== ROTATE =====
-AFRAME.registerComponent('spin',{
-  schema:{speed:{type:'number',default:0.1}},
-  tick(t,dt){this.el.object3D.rotation.y+=this.data.speed*dt*0.001;}
-});
-
-// ===== INFO CLICK =====
-AFRAME.registerComponent('car-info',{
-  schema:{name:{type:'string'},year:{type:'string'},engine:{type:'string'},power:{type:'string'},speed:{type:'string'},prod:{type:'string'},origin:{type:'string'},price:{type:'string'},fact:{type:'string'}},
-  init(){
-    this.el.addEventListener('click',()=>{
-      const d=this.data;
-      document.getElementById('pName').textContent=d.name+' ('+d.year+')';
-      document.getElementById('pSpecs').innerHTML=
-        '🏴 '+d.origin+'<br>🔧 Motor: '+d.engine+'<br>⚡ Potencia: '+d.power+'<br>💨 Vel. máx: '+d.speed+
-        '<br>🏭 Producción: '+d.prod+'<br>💰 Valor actual: '+d.price+'<br>📜 '+d.fact;
-      document.getElementById('info-panel').style.display='block';
-    });
-  }
-});
-
-// ===== VINTAGE CAR BUILDER =====
-AFRAME.registerComponent('vintage-car',{
-  schema:{
-    bodyColor:{type:'color',default:'#1a1a1a'},
-    brassColor:{type:'color',default:'#b8860b'},
-    leatherColor:{type:'color',default:'#5c3a1e'},
-    bodyL:{type:'number',default:3.8},
-    bodyW:{type:'number',default:1.5},
-    bodyH:{type:'number',default:0.5},
-    hoodL:{type:'number',default:1.4},
-    hoodH:{type:'number',default:0.55},
-    cabL:{type:'number',default:1.5},
-    cabH:{type:'number',default:0.8},
-    cabOff:{type:'number',default:-0.2},
-    wR:{type:'number',default:0.38},
-    hasRunningBoard:{type:'boolean',default:true},
-    hasFenders:{type:'boolean',default:true},
-    hasSoftTop:{type:'boolean',default:false},
-    hasWindshield:{type:'boolean',default:true},
-    hasTrunk:{type:'boolean',default:false},
-    hasSpare:{type:'boolean',default:false},
-    spokeWheels:{type:'boolean',default:true},
-    style:{type:'string',default:'touring'},
-    headlightSize:{type:'number',default:0.14},
-  },
-  init(){
-    const d=this.data,el=this.el;
-    const bL=d.bodyL,bW=d.bodyW,bH=d.bodyH,wR=d.wR;
-    const baseY=wR+0.08;
-    const brass=d.brassColor;
-
-    // === CHASSIS FRAME ===
-    this.box(el,bL*1.05,0.06,0.12,`0 ${baseY-0.06} ${bW*0.35}`,'#1a1008','roughness:0.8');
-    this.box(el,bL*1.05,0.06,0.12,`0 ${baseY-0.06} ${-bW*0.35}`,'#1a1008','roughness:0.8');
-    // Cross members
-    this.box(el,0.1,0.05,bW*0.8,`${bL*0.3} ${baseY-0.06} 0`,'#1a1008','roughness:0.8');
-    this.box(el,0.1,0.05,bW*0.8,`${-bL*0.3} ${baseY-0.06} 0`,'#1a1008','roughness:0.8');
-
-    // === MAIN BODY ===
-    this.box(el,bL*0.65,bH,bW,`${-bL*0.05} ${baseY+bH/2} 0`,d.bodyColor,'roughness:0.35;metalness:0.4');
-
-    // === HOOD / ENGINE COMPARTMENT ===
-    const hL=d.hoodL,hH=d.hoodH;
-    this.box(el,hL,hH,bW*0.7,`${bL/2-hL/2+0.05} ${baseY+hH/2} 0`,d.bodyColor,'roughness:0.3;metalness:0.45');
-    // Hood side vents
-    for(let s of[-1,1]){
-      for(let i=0;i<3;i++){
-        this.box(el,0.12,0.03,0.02,`${bL/2-hL*0.3-i*0.18} ${baseY+hH*0.7} ${s*bW*0.36}`,brass,'roughness:0.15;metalness:0.85');
-      }
-    }
-    // Hood ornament
-    this.box(el,0.02,0.12,0.02,`${bL/2+0.05} ${baseY+hH+0.06} 0`,brass,'roughness:0.1;metalness:0.9');
-
-    // === RADIATOR (front grille) ===
-    this.box(el,0.08,hH*1.1,bW*0.55,`${bL/2+0.08} ${baseY+hH*0.5} 0`,brass,'roughness:0.15;metalness:0.85');
-    // Grille slats
-    for(let i=0;i<5;i++){
-      this.box(el,0.03,0.02,bW*0.5,`${bL/2+0.1} ${baseY+hH*0.2+i*hH*0.15} 0`,'#0a0a0a','roughness:0.3');
-    }
-
-    // === CABIN ===
-    const cL=d.cabL,cH=d.cabH,cOff=d.cabOff;
-    const cabY=baseY+bH;
-    if(d.hasSoftTop){
-      // Soft top frame (canvas roof)
-      // Uprights
-      for(let s of[-1,1]){
-        this.cyl(el,0.03,cH,`${cOff+cL/2} ${cabY+cH/2} ${s*bW*0.42}`,'#2a2015','roughness:0.6');
-        this.cyl(el,0.03,cH,`${cOff-cL/2} ${cabY+cH/2} ${s*bW*0.42}`,'#2a2015','roughness:0.6');
-      }
-      // Canvas top
-      this.box(el,cL+0.1,0.04,bW*0.88,`${cOff} ${cabY+cH} 0`,'#2a2a1a','roughness:0.9;metalness:0.05');
-      // Side canvas
-      this.box(el,cL+0.1,cH*0.3,0.02,`${cOff} ${cabY+cH-cH*0.15} ${bW*0.44}`,'#2a2a1a','roughness:0.9;opacity:0.7;transparent:true');
-      this.box(el,cL+0.1,cH*0.3,0.02,`${cOff} ${cabY+cH-cH*0.15} ${-bW*0.44}`,'#2a2a1a','roughness:0.9;opacity:0.7;transparent:true');
-    } else {
-      // Hard top cabin
-      this.box(el,cL,cH,bW*0.85,`${cOff} ${cabY+cH/2} 0`,d.bodyColor,'roughness:0.3;metalness:0.4');
-      // Cabin windows
-      for(let s of[-1,1]){
-        this.box(el,cL*0.85,cH*0.55,0.02,`${cOff} ${cabY+cH*0.55} ${s*bW*0.43}`,'#1a2a3a','opacity:0.4;transparent:true;metalness:0.7');
-      }
-      // Roof
-      this.box(el,cL*0.9,0.05,bW*0.8,`${cOff} ${cabY+cH+0.02} 0`,d.bodyColor,'roughness:0.3;metalness:0.4');
-    }
-
-    // === WINDSHIELD ===
-    if(d.hasWindshield){
-      this.box(el,0.04,cH*0.6,bW*0.7,`${cOff+cL/2+0.1} ${cabY+cH*0.45} 0`,'#c8d8e8','opacity:0.35;transparent:true;metalness:0.8','0 0 12');
-      // Brass windshield frame
-      this.box(el,0.05,0.03,bW*0.72,`${cOff+cL/2+0.12} ${cabY+cH*0.7} 0`,brass,'roughness:0.15;metalness:0.85','0 0 12');
-      this.box(el,0.05,0.03,bW*0.72,`${cOff+cL/2+0.06} ${cabY+cH*0.15} 0`,brass,'roughness:0.15;metalness:0.85','0 0 12');
-    }
-
-    // === SEATS (leather) ===
-    // Front seat
-    this.box(el,0.5,0.25,bW*0.65,`${cOff+cL*0.15} ${cabY+0.12} 0`,d.leatherColor,'roughness:0.7;metalness:0.05');
-    // Seat back
-    this.box(el,0.08,0.4,bW*0.65,`${cOff-0.05} ${cabY+0.35} 0`,d.leatherColor,'roughness:0.7;metalness:0.05');
-    // Rear seat (for touring)
-    if(d.style==='touring'||d.style==='limousine'){
-      this.box(el,0.5,0.25,bW*0.65,`${cOff-cL*0.3} ${cabY+0.12} 0`,d.leatherColor,'roughness:0.7;metalness:0.05');
-      this.box(el,0.08,0.4,bW*0.65,`${cOff-cL*0.55} ${cabY+0.35} 0`,d.leatherColor,'roughness:0.7;metalness:0.05');
-    }
-
-    // === STEERING WHEEL (brass column + wheel) ===
-    const steerX=cOff+cL*0.3, steerY=cabY+0.55;
-    this.cyl(el,0.02,0.45,`${steerX} ${steerY} ${bW*0.18}`,brass,'roughness:0.15;metalness:0.85','20 0 0');
-    const stWheel=document.createElement('a-torus');
-    stWheel.setAttribute('radius',0.12);stWheel.setAttribute('radius-tubular',0.012);
-    stWheel.setAttribute('position',`${steerX+0.08} ${steerY+0.2} ${bW*0.18}`);
-    stWheel.setAttribute('rotation','70 0 0');
-    stWheel.setAttribute('color','#1a1008');stWheel.setAttribute('material','roughness:0.5;metalness:0.3');
-    el.appendChild(stWheel);
-
-    // === HEADLIGHTS (brass oil lamps) ===
-    const hlS=d.headlightSize;
-    for(let s of[-1,1]){
-      // Lamp body
-      this.cyl(el,hlS,hlS*1.5,`${bL/2+0.12} ${baseY+hH*0.65} ${s*bW*0.38}`,brass,'roughness:0.15;metalness:0.85','0 0 90');
-      // Lamp glass
-      const glass=document.createElement('a-sphere');
-      glass.setAttribute('radius',hlS*0.7);
-      glass.setAttribute('position',`${bL/2+0.2} ${baseY+hH*0.65} ${s*bW*0.38}`);
-      glass.setAttribute('color','#ffffdd');glass.setAttribute('material','emissive:#ffffaa;emissiveIntensity:0.5;opacity:0.8;transparent:true');
-      el.appendChild(glass);
-      // Lamp bracket
-      this.box(el,0.18,0.03,0.03,`${bL/2+0.04} ${baseY+hH*0.65} ${s*bW*0.38}`,brass,'roughness:0.15;metalness:0.85');
-    }
-
-    // === TAILLIGHTS (small brass) ===
-    for(let s of[-1,1]){
-      this.cyl(el,0.05,0.06,`${-bL/2-0.03} ${baseY+bH*0.6} ${s*bW*0.38}`,'#cc1111','emissive:#ff0000;emissiveIntensity:0.4','0 0 90');
-    }
-
-    // === RUNNING BOARDS ===
-    if(d.hasRunningBoard){
-      for(let s of[-1,1]){
-        this.box(el,bL*0.45,0.04,0.28,`${-bL*0.05} ${baseY+0.02} ${s*(bW/2+0.16)}`,'#1a1008','roughness:0.6;metalness:0.3');
-        // Running board supports
-        this.box(el,0.04,0.08,0.15,`${bL*0.1} ${baseY-0.02} ${s*(bW/2+0.16)}`,brass,'roughness:0.2;metalness:0.8');
-        this.box(el,0.04,0.08,0.15,`${-bL*0.15} ${baseY-0.02} ${s*(bW/2+0.16)}`,brass,'roughness:0.2;metalness:0.8');
-      }
-    }
-
-    // === FENDERS (mudguards) ===
-    if(d.hasFenders){
-      const wPos=[{x:bL*0.34,s:1},{x:bL*0.34,s:-1},{x:-bL*0.34,s:1},{x:-bL*0.34,s:-1}];
-      wPos.forEach(wp=>{
-        // Fender arch
-        const fender=document.createElement('a-torus');
-        fender.setAttribute('radius',wR+0.06);fender.setAttribute('radius-tubular',0.04);
-        fender.setAttribute('theta-length',180);fender.setAttribute('theta-start',0);
-        fender.setAttribute('rotation',`0 0 ${wp.s>0?0:0}`);
-        fender.setAttribute('position',`${wp.x} ${wR+0.04} ${wp.s*(bW/2+0.06)}`);
-        fender.setAttribute('rotation','90 90 0');
-        fender.setAttribute('color',d.bodyColor);fender.setAttribute('material','roughness:0.3;metalness:0.4');
-        el.appendChild(fender);
-      });
-    }
-
-    // === SPOKE WHEELS ===
-    const wheelX=[bL*0.34,-bL*0.34];
-    const wheelZ=[bW/2+0.08,-bW/2-0.08];
-    wheelX.forEach(wx=>{
-      wheelZ.forEach(wz=>{
-        // Tire (rubber)
-        this.cyl(el,wR,0.14,`${wx} ${wR} ${wz}`,'#1a1008','roughness:0.95','90 0 0');
-        // Tire rim ring
-        const rimRing=document.createElement('a-torus');
-        rimRing.setAttribute('radius',wR*0.92);rimRing.setAttribute('radius-tubular',0.02);
-        rimRing.setAttribute('rotation','90 0 0');
-        rimRing.setAttribute('position',`${wx} ${wR} ${wz}`);
-        rimRing.setAttribute('color',brass);rimRing.setAttribute('material','roughness:0.15;metalness:0.85');
-        el.appendChild(rimRing);
-        // Hub center
-        this.cyl(el,wR*0.15,0.16,`${wx} ${wR} ${wz}`,brass,'roughness:0.15;metalness:0.85','90 0 0');
-        // Spokes
-        if(d.spokeWheels){
-          for(let a=0;a<8;a++){
-            const angle=a*Math.PI/4;
-            const sx=Math.cos(angle)*wR*0.45;
-            const sy=Math.sin(angle)*wR*0.45;
-            const spoke=document.createElement('a-box');
-            spoke.setAttribute('width',wR*0.85);spoke.setAttribute('height',0.018);spoke.setAttribute('depth',0.018);
-            spoke.setAttribute('position',`${wx} ${wR+sy*0.5} ${wz}`);
-            spoke.setAttribute('rotation',`${a*45} 0 0`);
-            spoke.setAttribute('color',brass);spoke.setAttribute('material','roughness:0.15;metalness:0.85');
-            el.appendChild(spoke);
-          }
-        }
-      });
-    });
-
-    // === TRUNK ===
-    if(d.hasTrunk){
-      this.box(el,0.6,0.4,bW*0.55,`${-bL/2+0.1} ${baseY+bH*0.7} 0`,d.leatherColor,'roughness:0.65;metalness:0.1');
-      // Trunk straps
-      this.box(el,0.62,0.03,0.06,`${-bL/2+0.1} ${baseY+bH*0.95} ${bW*0.15}`,brass,'roughness:0.2;metalness:0.8');
-      this.box(el,0.62,0.03,0.06,`${-bL/2+0.1} ${baseY+bH*0.95} ${-bW*0.15}`,brass,'roughness:0.2;metalness:0.8');
-    }
-
-    // === SPARE WHEEL ===
-    if(d.hasSpare){
-      this.cyl(el,wR*0.8,0.1,`${-bL/2-0.08} ${baseY+bH*0.5} 0`,'#1a1008','roughness:0.9','0 90 0');
-      this.cyl(el,wR*0.12,0.12,`${-bL/2-0.08} ${baseY+bH*0.5} 0`,brass,'roughness:0.15;metalness:0.85','0 90 0');
-    }
-
-    // === EXHAUST PIPES ===
-    this.cyl(el,0.03,0.5,`${-bL/2} ${baseY-0.02} ${bW*0.25}`,brass,'roughness:0.2;metalness:0.8','0 0 90');
-
-    // === DOOR HANDLES ===
-    for(let s of[-1,1]){
-      this.box(el,0.1,0.025,0.025,`${cOff+cL*0.2} ${cabY+bH*0.4} ${s*(bW/2+0.01)}`,brass,'roughness:0.15;metalness:0.85');
-    }
-  },
-  box(p,w,h,dp,pos,col,mat,rot){
-    const b=document.createElement('a-box');
-    b.setAttribute('width',w);b.setAttribute('height',h);b.setAttribute('depth',dp);
-    b.setAttribute('position',pos);b.setAttribute('color',col);b.setAttribute('material',mat);
-    if(rot)b.setAttribute('rotation',rot);p.appendChild(b);
-  },
-  cyl(p,r,h,pos,col,mat,rot){
-    const c=document.createElement('a-cylinder');
-    c.setAttribute('radius',r);c.setAttribute('height',h);
-    c.setAttribute('position',pos);c.setAttribute('color',col);c.setAttribute('material',mat);
-    if(rot)c.setAttribute('rotation',rot);p.appendChild(c);
-  }
-});
-
-// ===== DATABASE: COCHES ANTIGUOS REALES =====
-const CARS=[
+// ===================== DATA =====================
+const CARS = [
   {
-    name:'Benz Patent-Motorwagen',year:'1886',
-    engine:'Monocilíndrico 954cc',power:'0.75 CV',speed:'16 km/h',
-    prod:'25 unidades',origin:'Alemania 🇩🇪',price:'Incalculable',
-    fact:'El PRIMER automóvil de la historia. Karl Benz lo patentó el 29 de enero de 1886.',
-    color:'#2a2015',brass:'#b8860b',leather:'#5c3a1e',
-    bL:2.4,bW:1.2,bH:0.3,hL:0.3,hH:0.25,cL:0.8,cH:0.2,cO:-0.1,wR:0.4,
-    board:false,fenders:false,softTop:false,ws:false,trunk:false,spare:false,spoke:true,style:'primitive',hlS:0.06
+    id: 0, name: "Model T", brand: "Ford", year: "1908",
+    color: 0x1a1a1a, accentColor: 0x8B7355,
+    desc: "El primer automóvil producido en masa de la historia. Henry Ford revolucionó la industria con la cadena de montaje, haciendo el automóvil accesible al público general por primera vez.",
+    specs: [
+      { label: "Motor", value: "4 cil." },
+      { label: "Potencia", value: "20 CV" },
+      { label: "Vel. máx.", value: "72 km/h" },
+      { label: "Producción", value: "15M uds." },
+    ],
+    position: [-14, 0, 0],
+    type: 'modelT'
   },
   {
-    name:'Ford Model T',year:'1908',
-    engine:'4 cil. 2.9L',power:'20 CV',speed:'72 km/h',
-    prod:'15 millones',origin:'EE.UU. 🇺🇸',price:'$30K–$60K',
-    fact:'El coche que motorizó América. Primer automóvil producido en cadena de montaje.',
-    color:'#0a0a0a',brass:'#b8860b',leather:'#3a2510',
-    bL:3.4,bW:1.5,bH:0.45,hL:1.0,hH:0.5,cL:1.3,cH:0.75,cO:-0.2,wR:0.38,
-    board:true,fenders:true,softTop:true,ws:true,trunk:false,spare:true,spoke:true,style:'touring',hlS:0.12
+    id: 1, name: "Type 35", brand: "Bugatti", year: "1924",
+    color: 0x1a3a6e, accentColor: 0xc8a96e,
+    desc: "Considerado uno de los coches de carreras más exitosos de todos los tiempos. Elegancia y rendimiento unidos en perfecta armonía por Ettore Bugatti durante los años dorados del automovilismo.",
+    specs: [
+      { label: "Motor", value: "8 cil." },
+      { label: "Potencia", value: "128 CV" },
+      { label: "Vel. máx.", value: "210 km/h" },
+      { label: "Victorias", value: "+1000" },
+    ],
+    position: [-7, 0, 0],
+    type: 'racer'
   },
   {
-    name:'Rolls-Royce Silver Ghost',year:'1906',
-    engine:'6 cil. 7.0L',power:'48 CV',speed:'105 km/h',
-    prod:'7874 unidades',origin:'Reino Unido 🇬🇧',price:'$500K+',
-    fact:'Apodado "El mejor coche del mundo". Estableció récord de fiabilidad en 1907.',
-    color:'#c0c0c0',brass:'#c8a44e',leather:'#6b3a1a',
-    bL:4.4,bW:1.7,bH:0.5,hL:1.6,hH:0.6,cL:1.8,cH:0.85,cO:-0.3,wR:0.4,
-    board:true,fenders:true,softTop:true,ws:true,trunk:true,spare:true,spoke:true,style:'touring',hlS:0.15
+    id: 2, name: "Silver Ghost", brand: "Rolls-Royce", year: "1907",
+    color: 0xc0c0c0, accentColor: 0xc8a96e,
+    desc: "Apodado 'el mejor automóvil del mundo'. Su silencio mecánico legendario y su acabado artesanal establecieron los estándares del lujo automovilístico que perduran hasta hoy.",
+    specs: [
+      { label: "Motor", value: "6 cil." },
+      { label: "Potencia", value: "48 CV" },
+      { label: "Vel. máx.", value: "105 km/h" },
+      { label: "Precio 1907", value: "£985" },
+    ],
+    position: [0, 0, 0],
+    type: 'luxury'
   },
   {
-    name:'Bugatti Type 35',year:'1924',
-    engine:'8 cil. 2.0L',power:'90 CV',speed:'210 km/h',
-    prod:'340 unidades',origin:'Francia 🇫🇷',price:'$1M+',
-    fact:'El coche de carreras más exitoso de la historia. Ganó más de 1000 carreras.',
-    color:'#1a3a6a',brass:'#c0c0c0',leather:'#3a2510',
-    bL:3.5,bW:1.3,bH:0.35,hL:1.5,hH:0.45,cL:0.8,cH:0.3,cO:-0.4,wR:0.35,
-    board:false,fenders:true,softTop:false,ws:true,trunk:false,spare:false,spoke:true,style:'racer',hlS:0.08
+    id: 3, name: "E-Type", brand: "Jaguar", year: "1961",
+    color: 0x8B0000, accentColor: 0xc0c0c0,
+    desc: "Enzo Ferrari lo llamó 'el coche más hermoso jamás construido'. Líneas de pura seducción, motor potente y precio accesible lo convirtieron en el símbolo del swinging sixties británico.",
+    specs: [
+      { label: "Motor", value: "6 cil." },
+      { label: "Potencia", value: "265 CV" },
+      { label: "Vel. máx.", value: "241 km/h" },
+      { label: "0–100", value: "6.9 s" },
+    ],
+    position: [7, 0, 0],
+    type: 'etype'
   },
   {
-    name:'Mercedes-Benz SSK',year:'1928',
-    engine:'6 cil. 7.1L Compresor',power:'300 CV',speed:'190 km/h',
-    prod:'33 unidades',origin:'Alemania 🇩🇪',price:'$7M+',
-    fact:'Super Sport Kurz. El deportivo más brutal de los años 20. Ferdinand Porsche lo diseñó.',
-    color:'#f0ece0',brass:'#c0c0c0',leather:'#4a2a10',
-    bL:4.2,bW:1.6,bH:0.4,hL:1.8,hH:0.55,cL:1.0,cH:0.4,cO:-0.5,wR:0.38,
-    board:true,fenders:true,softTop:false,ws:true,trunk:false,spare:true,spoke:true,style:'racer',hlS:0.12
-  },
-  {
-    name:'Hispano-Suiza H6B',year:'1919',
-    engine:'6 cil. 6.6L',power:'135 CV',speed:'137 km/h',
-    prod:'Exclusivo',origin:'España 🇪🇸',price:'$800K+',
-    fact:'Orgullo hispano. Considerado superior al Rolls-Royce por la crítica de su época.',
-    color:'#2a0a0a',brass:'#c8a44e',leather:'#5c3a1e',
-    bL:4.3,bW:1.7,bH:0.5,hL:1.5,hH:0.6,cL:1.8,cH:0.85,cO:-0.2,wR:0.4,
-    board:true,fenders:true,softTop:false,ws:true,trunk:true,spare:true,spoke:true,style:'limousine',hlS:0.14
-  },
-  {
-    name:'Duesenberg Model J',year:'1928',
-    engine:'8 cil. 6.9L DOHC',power:'265 CV',speed:'188 km/h',
-    prod:'481 unidades',origin:'EE.UU. 🇺🇸',price:'$1M–$10M',
-    fact:'El coche americano más lujoso jamás fabricado. Favorito de estrellas de Hollywood.',
-    color:'#1a1a2a',brass:'#c8a44e',leather:'#6b3a1a',
-    bL:4.5,bW:1.75,bH:0.55,hL:1.6,hH:0.65,cL:2.0,cH:0.9,cO:-0.2,wR:0.4,
-    board:true,fenders:true,softTop:false,ws:true,trunk:true,spare:true,spoke:true,style:'limousine',hlS:0.15
-  },
-  {
-    name:'Bentley 4½ Litre "Blower"',year:'1929',
-    engine:'4 cil. 4.4L Compresor',power:'175 CV',speed:'201 km/h',
-    prod:'55 unidades',origin:'Reino Unido 🇬🇧',price:'$5M+',
-    fact:'El "Blower Bentley" de los Bentley Boys. Inmortalizado por las novelas de James Bond.',
-    color:'#1a4a1a',brass:'#c0c0c0',leather:'#4a2a10',
-    bL:4.1,bW:1.6,bH:0.45,hL:1.6,hH:0.55,cL:1.2,cH:0.5,cO:-0.4,wR:0.4,
-    board:true,fenders:true,softTop:false,ws:true,trunk:false,spare:true,spoke:true,style:'racer',hlS:0.13
-  },
-  {
-    name:'Citroën Type A',year:'1919',
-    engine:'4 cil. 1.3L',power:'18 CV',speed:'65 km/h',
-    prod:'24093 unidades',origin:'Francia 🇫🇷',price:'$40K+',
-    fact:'El primer Citroën. Primer coche europeo producido en masa con cadena de montaje.',
-    color:'#3a3520',brass:'#b8860b',leather:'#5c3a1e',
-    bL:3.2,bW:1.4,bH:0.4,hL:0.9,hH:0.45,cL:1.3,cH:0.7,cO:-0.15,wR:0.35,
-    board:true,fenders:true,softTop:true,ws:true,trunk:false,spare:false,spoke:true,style:'touring',hlS:0.1
-  },
-  {
-    name:'Alfa Romeo 8C 2300',year:'1931',
-    engine:'8 cil. 2.3L Compresor',power:'155 CV',speed:'215 km/h',
-    prod:'188 unidades',origin:'Italia 🇮🇹',price:'$3M+',
-    fact:'Ganador de Le Mans, Mille Miglia y Targa Florio. La obra maestra de Vittorio Jano.',
-    color:'#cc0000',brass:'#c0c0c0',leather:'#3a2510',
-    bL:4.0,bW:1.5,bH:0.38,hL:1.5,hH:0.5,cL:1.0,cH:0.35,cO:-0.4,wR:0.36,
-    board:true,fenders:true,softTop:false,ws:true,trunk:false,spare:true,spoke:true,style:'racer',hlS:0.1
-  },
-  {
-    name:'Cadillac V-16',year:'1930',
-    engine:'V16 7.4L',power:'165 CV',speed:'160 km/h',
-    prod:'4076 unidades',origin:'EE.UU. 🇺🇸',price:'$300K+',
-    fact:'El primer coche con motor V16. Máximo lujo americano en plena Gran Depresión.',
-    color:'#1a1a1a',brass:'#c8a44e',leather:'#6b3a1a',
-    bL:4.6,bW:1.8,bH:0.55,hL:1.7,hH:0.65,cL:2.0,cH:0.9,cO:-0.2,wR:0.42,
-    board:true,fenders:true,softTop:false,ws:true,trunk:true,spare:true,spoke:true,style:'limousine',hlS:0.15
-  },
-  {
-    name:'Mercedes-Benz 540K',year:'1936',
-    engine:'8 cil. 5.4L Compresor',power:'180 CV',speed:'170 km/h',
-    prod:'419 unidades',origin:'Alemania 🇩🇪',price:'$2M+',
-    fact:'El gran turismo definitivo de los años 30. Elegancia y potencia insuperables.',
-    color:'#3a1a1a',brass:'#c0c0c0',leather:'#5c3a1e',
-    bL:4.5,bW:1.7,bH:0.5,hL:1.7,hH:0.6,cL:1.6,cH:0.7,cO:-0.3,wR:0.38,
-    board:true,fenders:true,softTop:false,ws:true,trunk:true,spare:true,spoke:true,style:'touring',hlS:0.13
+    id: 4, name: "250 GTO", brand: "Ferrari", year: "1962",
+    color: 0xcc2200, accentColor: 0xf5c518,
+    desc: "La obra maestra absoluta de Maranello. Creado para competir en GT y ganar. Hoy es el coche más valioso del mundo, con ejemplares vendidos por más de 70 millones de dólares.",
+    specs: [
+      { label: "Motor", value: "V12" },
+      { label: "Potencia", value: "302 CV" },
+      { label: "Vel. máx.", value: "280 km/h" },
+      { label: "Unidades", value: "36" },
+    ],
+    position: [14, 0, 0],
+    type: 'gto'
   }
 ];
 
-// ===== BUILD SCENE =====
-document.addEventListener('DOMContentLoaded',()=>{
-  const scene=document.querySelector('a-scene');
-  const cols=4,spX=11,spZ=11;
-  const stX=-(cols-1)*spX/2, stZ=-12;
+// ===================== THREE SETUP =====================
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.9;
 
-  CARS.forEach((c,i)=>{
-    const row=Math.floor(i/cols),col=i%cols;
-    const px=stX+col*spX, pz=stZ+row*spZ;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050508);
+scene.fog = new THREE.FogExp2(0x050508, 0.035);
 
-    const g=document.createElement('a-entity');
-    g.setAttribute('position',`${px} 0 ${pz}`);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 200);
+camera.position.set(0, 1.7, 12);
 
-    // Cobblestone pedestal
-    const base=document.createElement('a-cylinder');
-    base.setAttribute('radius',3.2);base.setAttribute('height',0.25);
-    base.setAttribute('position','0 0.12 0');base.setAttribute('segments-radial',24);
-    base.setAttribute('color','#1a1812');base.setAttribute('material','roughness:0.2;metalness:0.6');
-    g.appendChild(base);
+// ===================== LIGHTING =====================
+const ambient = new THREE.AmbientLight(0x111122, 0.5);
+scene.add(ambient);
 
-    // Brass ring
-    const ring=document.createElement('a-torus');
-    ring.setAttribute('radius',3.2);ring.setAttribute('radius-tubular',0.035);
-    ring.setAttribute('rotation','90 0 0');ring.setAttribute('position','0 0.26 0');
-    ring.setAttribute('color','#c8a44e');ring.setAttribute('material','roughness:0.15;metalness:0.9');
-    g.appendChild(ring);
+// Ceiling spotlights per car
+CARS.forEach(car => {
+  const spot = new THREE.SpotLight(0xffeedd, 2.5, 20, 0.35, 0.4);
+  spot.position.set(car.position[0], 9, car.position[2]);
+  spot.target.position.set(car.position[0], 0, car.position[2]);
+  spot.castShadow = true;
+  scene.add(spot);
+  scene.add(spot.target);
 
-    // Rotating car
-    const rot=document.createElement('a-entity');
-    rot.setAttribute('position','0 0.26 0');rot.setAttribute('spin','speed:0.08');
+  const fill = new THREE.PointLight(0x334466, 0.4, 8);
+  fill.position.set(car.position[0], 1.5, car.position[2] + 3);
+  scene.add(fill);
+});
 
-    const car=document.createElement('a-entity');
-    car.setAttribute('rotation','0 90 0');car.setAttribute('class','clickable');
-    car.setAttribute('car-info',{name:c.name,year:c.year,engine:c.engine,power:c.power,speed:c.speed,prod:c.prod,origin:c.origin,price:c.price,fact:c.fact});
-    car.setAttribute('vintage-car',{
-      bodyColor:c.color,brassColor:c.brass,leatherColor:c.leather,
-      bodyL:c.bL,bodyW:c.bW,bodyH:c.bH,hoodL:c.hL,hoodH:c.hH,
-      cabL:c.cL,cabH:c.cH,cabOff:c.cO,wR:c.wR,
-      hasRunningBoard:c.board,hasFenders:c.fenders,hasSoftTop:c.softTop,
-      hasWindshield:c.ws,hasTrunk:c.trunk,hasSpare:c.spare,
-      spokeWheels:c.spoke,style:c.style,headlightSize:c.hlS
-    });
-    rot.appendChild(car);
-    g.appendChild(rot);
+// Ambient strips
+[-18, 18].forEach(x => {
+  const strip = new THREE.RectAreaLight ? null : new THREE.PointLight(0x1a2a4a, 0.3, 30);
+  if (strip) { strip.position.set(x, 4, 0); scene.add(strip); }
+});
 
-    // Spotlight
-    const spot=document.createElement('a-light');
-    spot.setAttribute('type','spot');spot.setAttribute('color','#fff5e0');
-    spot.setAttribute('intensity','2.2');spot.setAttribute('position','0 8 0');
-    spot.setAttribute('rotation','-90 0 0');spot.setAttribute('angle','28');
-    spot.setAttribute('penumbra','0.5');
-    g.appendChild(spot);
+// ===================== MUSEUM ARCHITECTURE =====================
+function buildMuseum() {
+  const mat = (color, rough = 0.8, metal = 0.0) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
 
-    // Warm glow
-    const gl=document.createElement('a-light');
-    gl.setAttribute('type','point');gl.setAttribute('color','#c8a44e');
-    gl.setAttribute('intensity','0.08');gl.setAttribute('distance','4');
-    gl.setAttribute('position','0 0.4 0');
-    g.appendChild(gl);
+  // Floor — dark marble
+  const floorGeo = new THREE.PlaneGeometry(60, 30);
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0e, roughness: 0.1, metalness: 0.6 });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
 
-    // PLAQUE
-    const plq=document.createElement('a-entity');
-    plq.setAttribute('position','0 0.9 -3.8');
+  // Floor grid lines
+  for (let i = -15; i <= 15; i += 3) {
+    const lg = new THREE.PlaneGeometry(60, 0.02);
+    const lm = new THREE.MeshBasicMaterial({ color: 0x1a1a2e });
+    const l = new THREE.Mesh(lg, lm);
+    l.rotation.x = -Math.PI / 2;
+    l.position.set(0, 0.001, i);
+    scene.add(l);
+  }
 
-    const pb=document.createElement('a-plane');
-    pb.setAttribute('width',3.8);pb.setAttribute('height',1.4);
-    pb.setAttribute('color','#0e0c08');pb.setAttribute('material','roughness:0.4');
-    plq.appendChild(pb);
+  // Ceiling
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(60, 30), mat(0x080810, 0.9));
+  ceil.rotation.x = Math.PI / 2;
+  ceil.position.y = 10;
+  scene.add(ceil);
 
-    const pbr=document.createElement('a-plane');
-    pbr.setAttribute('width',3.9);pbr.setAttribute('height',1.5);
-    pbr.setAttribute('color','#c8a44e');pbr.setAttribute('position','0 0 -0.005');
-    plq.appendChild(pbr);
+  // Walls
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x0c0c16, roughness: 0.9 });
 
-    const nt=document.createElement('a-text');
-    nt.setAttribute('value',c.name);nt.setAttribute('align','center');
-    nt.setAttribute('position','0 0.35 0.02');nt.setAttribute('width',3.5);
-    nt.setAttribute('color','#c8a44e');nt.setAttribute('font','mozillavr');
-    plq.appendChild(nt);
+  const backWall = new THREE.Mesh(new THREE.PlaneGeometry(60, 10), wallMat);
+  backWall.position.set(0, 5, -15);
+  scene.add(backWall);
 
-    const yt=document.createElement('a-text');
-    yt.setAttribute('value',c.year+' · '+c.origin);yt.setAttribute('align','center');
-    yt.setAttribute('position','0 0.08 0.02');yt.setAttribute('width',2.6);yt.setAttribute('color','#e0d8c8');
-    plq.appendChild(yt);
+  const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(60, 10), wallMat);
+  frontWall.rotation.y = Math.PI;
+  frontWall.position.set(0, 5, 15);
+  scene.add(frontWall);
 
-    const et=document.createElement('a-text');
-    et.setAttribute('value',c.engine+' — '+c.power);et.setAttribute('align','center');
-    et.setAttribute('position','0 -0.15 0.02');et.setAttribute('width',2.3);et.setAttribute('color','#998866');
-    plq.appendChild(et);
+  const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(30, 10), wallMat);
+  leftWall.rotation.y = Math.PI / 2;
+  leftWall.position.set(-30, 5, 0);
+  scene.add(leftWall);
 
-    const ft=document.createElement('a-text');
-    ft.setAttribute('value','▸ Click para más info ◂');et.setAttribute('align','center');
-    ft.setAttribute('position','0 -0.42 0.02');ft.setAttribute('width',1.8);ft.setAttribute('color','#c8a44e');
-    ft.setAttribute('align','center');
-    plq.appendChild(ft);
+  const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(30, 10), wallMat);
+  rightWall.rotation.y = -Math.PI / 2;
+  rightWall.position.set(30, 5, 0);
+  scene.add(rightWall);
 
-    g.appendChild(plq);
-    scene.appendChild(g);
+  // Gold cornice strips
+  [-29.9, 29.9].forEach(x => {
+    const corn = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 30), mat(0xc8a96e, 0.2, 0.9));
+    corn.position.set(x, 8.5, 0);
+    scene.add(corn);
   });
+
+  // Pedestals per car
+  CARS.forEach(car => {
+    const pedGeo = new THREE.BoxGeometry(3.2, 0.15, 1.8);
+    const pedMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.3, metalness: 0.7 });
+    const ped = new THREE.Mesh(pedGeo, pedMat);
+    ped.position.set(car.position[0], 0.075, car.position[2]);
+    ped.receiveShadow = true;
+    scene.add(ped);
+
+    // Gold trim on pedestal
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(3.25, 0.02, 1.85), mat(0xc8a96e, 0.1, 1.0));
+    trim.position.set(car.position[0], 0.16, car.position[2]);
+    scene.add(trim);
+
+    // Name plate
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.06, 0.4), mat(0xc8a96e, 0.2, 0.8));
+    plate.position.set(car.position[0], 0.17, car.position[2] + 1.0);
+    scene.add(plate);
+  });
+
+  // Ceiling light fixtures
+  CARS.forEach(car => {
+    const fix = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 0.2, 8), mat(0xc8a96e, 0.2, 0.9));
+    fix.position.set(car.position[0], 9.9, car.position[2]);
+    scene.add(fix);
+  });
+
+  // Columns
+  [-21, -3, 3, 21].forEach(x => {
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 10, 12), mat(0x0e0e18, 0.7, 0.2));
+    col.position.set(x, 5, 0);
+    scene.add(col);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.15, 0.9), mat(0xc8a96e, 0.2, 0.8));
+    cap.position.set(x, 10.05, 0);
+    scene.add(cap);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.8), mat(0xc8a96e, 0.2, 0.8));
+    base.position.set(x, 0.05, 0);
+    scene.add(base);
+  });
+}
+
+// ===================== CAR BUILDERS =====================
+function buildCar(carData) {
+  const group = new THREE.Group();
+  const c = carData.color;
+  const acc = carData.accentColor;
+
+  const bodyMat = new THREE.MeshStandardMaterial({ color: c, roughness: 0.25, metalness: 0.8 });
+  const chromeMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.05, metalness: 1.0 });
+  const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, metalness: 0.0 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.0, metalness: 0.0, transparent: true, opacity: 0.3 });
+  const accentMat = new THREE.MeshStandardMaterial({ color: acc, roughness: 0.2, metalness: 0.9 });
+  const tireMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.1, metalness: 1.0 });
+  const lightMat = new THREE.MeshStandardMaterial({ color: 0xffffcc, roughness: 0.0, emissive: 0xffffcc, emissiveIntensity: 0.5 });
+
+  const type = carData.type;
+
+  if (type === 'modelT') {
+    // FORD MODEL T
+    // Main body — high, boxy
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 1.1), bodyMat);
+    body.position.set(0, 0.5, 0);
+    group.add(body);
+    // Cabin
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.7, 1.0), bodyMat);
+    cabin.position.set(-0.1, 1.05, 0);
+    group.add(cabin);
+    // Roof
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 1.0), blackMat);
+    roof.position.set(-0.1, 1.44, 0);
+    group.add(roof);
+    // Windshield
+    const wind = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.9), glassMat);
+    wind.position.set(0.63, 1.0, 0);
+    group.add(wind);
+    // Hood
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.55, 1.0), bodyMat);
+    hood.position.set(0.95, 0.65, 0);
+    group.add(hood);
+    // Radiator grille
+    const rad = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.8), chromeMat);
+    rad.position.set(1.35, 0.6, 0);
+    group.add(rad);
+    // Fenders front
+    [-0.45, 0.45].forEach(z => {
+      const fen = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.15, 16), bodyMat);
+      fen.rotation.x = Math.PI / 2;
+      fen.rotation.z = Math.PI / 2;
+      fen.position.set(1.0, 0.38, z);
+      group.add(fen);
+    });
+    // Fenders rear
+    [-0.45, 0.45].forEach(z => {
+      const fen = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.15, 16), bodyMat);
+      fen.rotation.x = Math.PI / 2;
+      fen.rotation.z = Math.PI / 2;
+      fen.position.set(-0.9, 0.38, z);
+      group.add(fen);
+    });
+    // Running boards
+    [-0.58, 0.58].forEach(z => {
+      const rb = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.18), blackMat);
+      rb.position.set(0, 0.28, z);
+      group.add(rb);
+    });
+    // Headlamps
+    [0.3, -0.3].forEach(z => {
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 12), chromeMat);
+      lamp.rotation.z = Math.PI / 2;
+      lamp.position.set(1.38, 0.78, z);
+      group.add(lamp);
+      const lensG = new THREE.Mesh(new THREE.CircleGeometry(0.08, 12), lightMat);
+      lensG.rotation.y = -Math.PI / 2;
+      lensG.position.set(1.49, 0.78, z);
+      group.add(lensG);
+    });
+    // Wheels
+    [[1.0, 0.38, 0.58], [1.0, 0.38, -0.58], [-0.9, 0.38, 0.58], [-0.9, 0.38, -0.58]].forEach(([x,y,z]) => {
+      const tire = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.09, 8, 24), tireMat);
+      tire.rotation.y = Math.PI / 2;
+      tire.position.set(x, y, z);
+      group.add(tire);
+      const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.6, 6), chromeMat);
+      spoke.rotation.z = Math.PI / 2;
+      spoke.position.set(x, y, z);
+      group.add(spoke);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.65, 8), chromeMat);
+      hub.rotation.z = Math.PI / 2;
+      hub.position.set(x, y, z);
+      group.add(hub);
+    });
+    // Steering wheel
+    const sw = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.02, 8, 20), chromeMat);
+    sw.rotation.x = 0.4;
+    sw.position.set(0.35, 0.9, 0);
+    group.add(sw);
+
+  } else if (type === 'racer') {
+    // BUGATTI TYPE 35 — long low racer
+    const body = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.35, 0.9), bodyMat);
+    body.position.set(0, 0.5, 0);
+    group.add(body);
+    // Curved tail (taper back)
+    const tailGeo = new THREE.CylinderGeometry(0.15, 0.45, 1.0, 8);
+    const tail = new THREE.Mesh(tailGeo, bodyMat);
+    tail.rotation.z = -Math.PI / 2;
+    tail.position.set(-1.25, 0.55, 0);
+    group.add(tail);
+    // Long hood
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.25, 0.75), bodyMat);
+    hood.position.set(0.75, 0.68, 0);
+    group.add(hood);
+    // Cockpit
+    const cockpit = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.7), bodyMat);
+    cockpit.position.set(-0.1, 0.78, 0);
+    group.add(cockpit);
+    // Windscreen
+    const ws = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.6), glassMat);
+    ws.position.set(0.28, 0.88, 0);
+    group.add(ws);
+    // Exposed engine cylinders
+    for (let i = 0; i < 6; i++) {
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.4, 8), chromeMat);
+      cyl.position.set(0.7 - i * 0.17, 0.9, 0);
+      group.add(cyl);
+    }
+    // Exhaust pipes
+    [-0.3, 0.3].forEach(z => {
+      const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8), chromeMat);
+      ex.rotation.z = Math.PI / 2;
+      ex.position.set(0.0, 0.42, z * 0.5 + (z > 0 ? 0.38 : -0.38));
+      group.add(ex);
+    });
+    // Radiator horseshoe shape
+    const radBox = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.7), bodyMat);
+    radBox.position.set(1.46, 0.6, 0);
+    group.add(radBox);
+    const radChrome = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.48, 0.68), chromeMat);
+    radChrome.position.set(1.5, 0.6, 0);
+    group.add(radChrome);
+    // Wheels — wire spoke style
+    [[1.1, 0.38, 0.52], [1.1, 0.38, -0.52], [-0.9, 0.38, 0.52], [-0.9, 0.38, -0.52]].forEach(([x,y,z]) => {
+      const tire = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.08, 8, 24), tireMat);
+      tire.rotation.y = Math.PI / 2;
+      tire.position.set(x, y, z);
+      group.add(tire);
+      // Wire spokes
+      for (let s = 0; s < 8; s++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.62, 0.01), accentMat);
+        spoke.rotation.z = s * Math.PI / 8;
+        spoke.position.set(x, y, z);
+        group.add(spoke);
+      }
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.58, 8), accentMat);
+      hub.rotation.z = Math.PI / 2;
+      hub.position.set(x, y, z);
+      group.add(hub);
+    });
+    // Headlamps
+    [0.28, -0.28].forEach(z => {
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.22, 12), chromeMat);
+      lamp.rotation.z = Math.PI / 2;
+      lamp.position.set(1.42, 0.7, z);
+      group.add(lamp);
+    });
+
+  } else if (type === 'luxury') {
+    // ROLLS-ROYCE SILVER GHOST — long, stately
+    // Main body
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.45, 1.3), bodyMat);
+    body.position.set(0, 0.52, 0);
+    group.add(body);
+    // Open-top cabin
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.65, 1.25), bodyMat);
+    cabin.position.set(-0.2, 1.0, 0);
+    group.add(cabin);
+    // Convertible top frame
+    const topFrame = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.04, 1.2), blackMat);
+    topFrame.position.set(-0.2, 1.35, 0);
+    group.add(topFrame);
+    // Windshield
+    const wind = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.55, 1.1), glassMat);
+    wind.position.set(0.46, 1.0, 0);
+    group.add(wind);
+    // Long hood
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.38, 1.2), bodyMat);
+    hood.position.set(0.9, 0.65, 0);
+    group.add(hood);
+    // Hood louvers
+    for (let i = 0; i < 5; i++) {
+      const louv = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.22, 1.0), chromeMat);
+      louv.position.set(0.42 + i * 0.2, 0.72, 0);
+      group.add(louv);
+    }
+    // Spirit of Ecstasy
+    const spirit = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.2, 6), chromeMat);
+    spirit.position.set(1.52, 0.95, 0);
+    group.add(spirit);
+    // Radiator — upright, prominent
+    const rad = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.9), chromeMat);
+    rad.position.set(1.5, 0.65, 0);
+    group.add(rad);
+    // Running boards
+    [-0.7, 0.7].forEach(z => {
+      const rb = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.06, 0.22), blackMat);
+      rb.position.set(0, 0.3, z);
+      group.add(rb);
+    });
+    // Fenders — sweeping
+    [[1.1, 0.38, 0.72], [1.1, 0.38, -0.72], [-0.85, 0.38, 0.72], [-0.85, 0.38, -0.72]].forEach(([x,y,z]) => {
+      const fen = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 8, 0, Math.PI), bodyMat);
+      fen.rotation.x = Math.PI;
+      fen.position.set(x, y + 0.05, z);
+      group.add(fen);
+    });
+    // Wheels
+    [[1.1, 0.38, 0.72], [1.1, 0.38, -0.72], [-0.85, 0.38, 0.72], [-0.85, 0.38, -0.72]].forEach(([x,y,z]) => {
+      const tire = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.1, 8, 24), tireMat);
+      tire.rotation.y = Math.PI / 2;
+      tire.position.set(x, y, z);
+      group.add(tire);
+      for (let s = 0; s < 10; s++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.65, 0.008), chromeMat);
+        spoke.rotation.z = s * Math.PI / 10;
+        spoke.position.set(x, y, z);
+        group.add(spoke);
+      }
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.76, 12), chromeMat);
+      hub.rotation.z = Math.PI / 2;
+      hub.position.set(x, y, z);
+      group.add(hub);
+    });
+    // Headlamps (big brass)
+    [0.38, -0.38].forEach(z => {
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.28, 12), accentMat);
+      lamp.rotation.z = Math.PI / 2;
+      lamp.position.set(1.45, 0.8, z);
+      group.add(lamp);
+      const lens = new THREE.Mesh(new THREE.CircleGeometry(0.12, 12), lightMat);
+      lens.rotation.y = -Math.PI / 2;
+      lens.position.set(1.6, 0.8, z);
+      group.add(lens);
+    });
+
+  } else if (type === 'etype') {
+    // JAGUAR E-TYPE — long bonnet, sensuous curves
+    // Body low and sleek
+    const bodyLow = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.3, 1.2), bodyMat);
+    bodyLow.position.set(0, 0.48, 0);
+    group.add(bodyLow);
+    // Cockpit bubble
+    const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.68, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), bodyMat);
+    cockpit.position.set(-0.25, 0.63, 0);
+    group.add(cockpit);
+    // Glass
+    const glass = new THREE.Mesh(new THREE.SphereGeometry(0.62, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), glassMat);
+    glass.position.set(-0.25, 0.64, 0);
+    group.add(glass);
+    // Long bonnet
+    const bonnet = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 1.0), bodyMat);
+    bonnet.position.set(0.85, 0.7, 0);
+    group.add(bonnet);
+    // Bonnet bulge
+    const bulge = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.55, 8), bodyMat);
+    bulge.rotation.z = Math.PI / 2;
+    bulge.position.set(0.82, 0.82, 0);
+    group.add(bulge);
+    // Nose
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 8, 0, Math.PI), bodyMat);
+    nose.rotation.z = -Math.PI / 2;
+    nose.position.set(1.62, 0.62, 0);
+    group.add(nose);
+    // Small grille
+    const grille = new THREE.Mesh(new THREE.CircleGeometry(0.18, 12), chromeMat);
+    grille.rotation.y = -Math.PI / 2;
+    grille.position.set(2.04, 0.62, 0);
+    group.add(grille);
+    // Headlamps (under fairings)
+    [0.35, -0.35].forEach(z => {
+      const cov = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8, 0, Math.PI), glassMat);
+      cov.rotation.z = -Math.PI / 2;
+      cov.position.set(1.85, 0.67, z);
+      group.add(cov);
+    });
+    // Tail fins
+    [-0.5, 0.5].forEach(z => {
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.05), bodyMat);
+      fin.position.set(-1.15, 0.85, z);
+      group.add(fin);
+    });
+    // Exhaust
+    [-0.3, 0.3].forEach(z => {
+      const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3, 8), chromeMat);
+      ex.rotation.z = Math.PI / 2;
+      ex.position.set(-1.4, 0.38, z);
+      group.add(ex);
+    });
+    // Wheels — wider stance
+    [[1.1, 0.38, 0.68], [1.1, 0.38, -0.68], [-1.0, 0.38, 0.68], [-1.0, 0.38, -0.68]].forEach(([x,y,z]) => {
+      const tire = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.12, 8, 24), tireMat);
+      tire.rotation.y = Math.PI / 2;
+      tire.position.set(x, y, z);
+      group.add(tire);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.68, 6), rimMat);
+      rim.rotation.z = Math.PI / 2;
+      rim.position.set(x, y, z);
+      group.add(rim);
+      for (let s = 0; s < 6; s++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.58, 0.015), chromeMat);
+        spoke.rotation.z = s * Math.PI / 6;
+        spoke.position.set(x, y, z);
+        group.add(spoke);
+      }
+    });
+
+  } else if (type === 'gto') {
+    // FERRARI 250 GTO — iconic GT shape
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.3, 1.25), bodyMat);
+    body.position.set(0, 0.5, 0);
+    group.add(body);
+    // Fastback roofline
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.45, 1.1), bodyMat);
+    roof.position.set(-0.1, 0.82, 0);
+    group.add(roof);
+    // Sloping windscreen
+    const wind = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 1.05), glassMat);
+    wind.rotation.z = 0.4;
+    wind.position.set(0.52, 0.82, 0);
+    group.add(wind);
+    // Rear glass slope
+    const rear = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 1.0), glassMat);
+    rear.rotation.z = -0.5;
+    rear.position.set(-0.68, 0.8, 0);
+    group.add(rear);
+    // Bonnet
+    const bon = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.2, 1.1), bodyMat);
+    bon.position.set(0.95, 0.65, 0);
+    group.add(bon);
+    // Bonnet scoop
+    const scoop = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.35), bodyMat);
+    scoop.position.set(0.8, 0.78, 0);
+    group.add(scoop);
+    // Nose — Kamm style
+    const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.5, 0.6, 12), bodyMat);
+    nose.rotation.z = -Math.PI / 2;
+    nose.position.set(1.55, 0.55, 0);
+    group.add(nose);
+    // Triple vents on hood
+    for (let i = 0; i < 3; i++) {
+      const vent = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.02, 0.06), chromeMat);
+      vent.position.set(0.6, 0.77, -0.15 + i * 0.15);
+      group.add(vent);
+    }
+    // Front grille opening
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.7), blackMat);
+    grille.position.set(1.78, 0.48, 0);
+    group.add(grille);
+    // Headlamps (recessed)
+    [0.42, -0.42].forEach(z => {
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.18, 12), chromeMat);
+      lamp.rotation.z = Math.PI / 2;
+      lamp.position.set(1.6, 0.72, z);
+      group.add(lamp);
+      const lens = new THREE.Mesh(new THREE.CircleGeometry(0.08, 12), lightMat);
+      lens.rotation.y = -Math.PI / 2;
+      lens.position.set(1.7, 0.72, z);
+      group.add(lens);
+    });
+    // Exhausts (trio)
+    [-0.25, 0, 0.25].forEach(z => {
+      const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4, 8), chromeMat);
+      ex.rotation.z = Math.PI / 2;
+      ex.position.set(-1.38, 0.35, z * 0.6);
+      group.add(ex);
+    });
+    // Wide wheels
+    [[1.05, 0.36, 0.72], [1.05, 0.36, -0.72], [-1.0, 0.36, 0.72], [-1.0, 0.36, -0.72]].forEach(([x,y,z]) => {
+      const tire = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.13, 8, 24), tireMat);
+      tire.rotation.y = Math.PI / 2;
+      tire.position.set(x, y, z);
+      group.add(tire);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.72, 5), rimMat);
+      rim.rotation.z = Math.PI / 2;
+      rim.position.set(x, y, z);
+      group.add(rim);
+      const hubcap = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.74, 8), new THREE.MeshStandardMaterial({ color: 0xff2200, roughness: 0.3, metalness: 0.5 }));
+      hubcap.rotation.z = Math.PI / 2;
+      hubcap.position.set(x, y, z);
+      group.add(hubcap);
+      for (let s = 0; s < 5; s++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.55, 0.015), chromeMat);
+        spoke.rotation.z = s * Math.PI / 5;
+        spoke.position.set(x, y, z);
+        group.add(spoke);
+      }
+    });
+  }
+
+  group.position.set(...carData.position);
+  group.position.y += 0.15;
+
+  // Shadow
+  group.traverse(child => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+
+  return group;
+}
+
+// ===================== SCENE SETUP =====================
+buildMuseum();
+
+const carMeshes = [];
+CARS.forEach(car => {
+  const group = buildCar(car);
+  scene.add(group);
+  carMeshes.push({ group, data: car });
+});
+
+// Floating dust particles
+const particleCount = 300;
+const particleGeo = new THREE.BufferGeometry();
+const particlePos = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+  particlePos[i * 3] = (Math.random() - 0.5) * 50;
+  particlePos[i * 3 + 1] = Math.random() * 10;
+  particlePos[i * 3 + 2] = (Math.random() - 0.5) * 25;
+}
+particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+const particleMat = new THREE.PointsMaterial({ color: 0xc8a96e, size: 0.03, transparent: true, opacity: 0.4 });
+scene.add(new THREE.Points(particleGeo, particleMat));
+
+// ===================== CONTROLS =====================
+const keys = {};
+let isLocked = false;
+let selectedCar = null;
+let pitch = 0, yaw = 0;
+const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+document.addEventListener('keydown', e => { keys[e.code] = true; });
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+canvas.addEventListener('click', () => {
+  if (!isLocked) canvas.requestPointerLock();
+});
+
+document.addEventListener('pointerlockchange', () => {
+  isLocked = document.pointerLockElement === canvas;
+});
+
+document.addEventListener('mousemove', e => {
+  if (!isLocked) return;
+  yaw -= e.movementX * 0.002;
+  pitch -= e.movementY * 0.002;
+  pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch));
+});
+
+// Click to select car
+document.addEventListener('click', () => {
+  if (!isLocked) return;
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+  const allMeshes = [];
+  carMeshes.forEach(cm => cm.group.traverse(m => { if (m.isMesh) allMeshes.push(m); }));
+  const hits = raycaster.intersectObjects(allMeshes);
+  if (hits.length > 0) {
+    const hitObj = hits[0].object;
+    for (const cm of carMeshes) {
+      let found = false;
+      cm.group.traverse(m => { if (m === hitObj) found = true; });
+      if (found) { showCarInfo(cm.data); break; }
+    }
+  }
+});
+
+function showCarInfo(car) {
+  selectedCar = car;
+  document.getElementById('info-year').textContent = car.year;
+  document.getElementById('info-name').textContent = car.name;
+  document.getElementById('info-brand').textContent = car.brand;
+  document.getElementById('info-desc').textContent = car.desc;
+  const specsEl = document.getElementById('info-specs');
+  specsEl.innerHTML = '';
+  car.specs.forEach(s => {
+    specsEl.innerHTML += `<div class="spec-item"><div class="spec-label">${s.label}</div><div class="spec-value">${s.value}</div></div>`;
+  });
+  // Nav dots
+  const nav = document.getElementById('car-nav');
+  nav.innerHTML = '';
+  CARS.forEach(c => {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (c.id === car.id ? ' active' : '');
+    dot.onclick = () => showCarInfo(c);
+    nav.appendChild(dot);
+  });
+  document.getElementById('info-panel').classList.add('visible');
+}
+
+// Hide panel on escape
+document.addEventListener('keydown', e => {
+  if (e.code === 'Escape') {
+    document.getElementById('info-panel').classList.remove('visible');
+  }
+});
+
+// ===================== ANIMATION =====================
+const clock = new THREE.Clock();
+let frameCount = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const t = clock.getElapsedTime();
+  frameCount++;
+
+  // Rotate cars slowly
+  carMeshes.forEach((cm, i) => {
+    cm.group.rotation.y = Math.sin(t * 0.15 + i * 1.2) * 0.3;
+  });
+
+  // Particle drift
+  const pos = particleGeo.attributes.position.array;
+  for (let i = 0; i < particleCount; i++) {
+    pos[i * 3 + 1] += Math.sin(t + i) * 0.0003;
+  }
+  particleGeo.attributes.position.needsUpdate = true;
+
+  // Movement
+  if (isLocked) {
+    euler.set(pitch, yaw, 0);
+    camera.quaternion.setFromEuler(euler);
+
+    const speed = keys['ShiftLeft'] ? 8 : 4;
+    const dir = new THREE.Vector3();
+    if (keys['KeyW'] || keys['ArrowUp']) dir.z -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) dir.z += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) dir.x -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) dir.x += 1;
+    if (dir.length() > 0) {
+      dir.normalize();
+      dir.applyEuler(new THREE.Euler(0, yaw, 0));
+      camera.position.addScaledVector(dir, speed * dt);
+    }
+    camera.position.y = 1.7;
+    camera.position.x = Math.max(-28, Math.min(28, camera.position.x));
+    camera.position.z = Math.max(-13, Math.min(13, camera.position.z));
+
+    // Proximity hint
+    let nearest = Infinity, nearCar = null;
+    carMeshes.forEach(cm => {
+      const d = camera.position.distanceTo(new THREE.Vector3(...cm.data.position));
+      if (d < nearest) { nearest = d; nearCar = cm; }
+    });
+    const selEl = document.getElementById('selected-car');
+    if (nearest < 5) {
+      selEl.textContent = `${nearCar.data.brand} ${nearCar.data.name} — Haz clic para ver`;
+      selEl.classList.add('show');
+    } else {
+      selEl.classList.remove('show');
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+// ===================== LOADER =====================
+window.addEventListener('load', () => {
+  const bar = document.getElementById('loader-bar');
+  const hint = document.getElementById('loader-hint');
+  const btn = document.getElementById('enter-btn');
+  bar.style.width = '100%';
+  setTimeout(() => { hint.textContent = 'Preparando exposición...'; }, 600);
+  setTimeout(() => { hint.textContent = 'Museo listo'; btn.style.display = 'block'; }, 2000);
+});
+
+function enterMuseum() {
+  document.getElementById('loader').classList.add('hidden');
+  animate();
+  setTimeout(() => canvas.requestPointerLock(), 500);
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
-
-<!-- CAMERA -->
-<a-entity position="0 1.6 24">
-  <a-camera look-controls wasd-controls="acceleration:100" cursor="rayOrigin:mouse" raycaster="objects:.clickable">
-    <a-cursor color="#c8a44e" fuse="false"></a-cursor>
-  </a-camera>
-</a-entity>
-<a-entity laser-controls="hand:left" raycaster="objects:.clickable"></a-entity>
-<a-entity laser-controls="hand:right" raycaster="objects:.clickable"></a-entity>
-
-<!-- LIGHTING -->
-<a-light type="ambient" color="#1a1510" intensity="0.7"></a-light>
-<a-light type="directional" intensity="0.2" position="5 12 5" color="#fff5e0"></a-light>
-<a-light type="directional" intensity="0.12" position="-5 10 -5" color="#ffe8cc"></a-light>
-
-<!-- Ceiling lights -->
-<a-light type="point" intensity="0.3" position="-16 9 -12" distance="25" color="#fff5e0"></a-light>
-<a-light type="point" intensity="0.3" position="0 9 -12" distance="25" color="#fff5e0"></a-light>
-<a-light type="point" intensity="0.3" position="16 9 -12" distance="25" color="#fff5e0"></a-light>
-<a-light type="point" intensity="0.3" position="-16 9 0" distance="25" color="#fff5e0"></a-light>
-<a-light type="point" intensity="0.3" position="0 9 0" distance="25" color="#ffe8cc"></a-light>
-<a-light type="point" intensity="0.3" position="16 9 0" distance="25" color="#fff5e0"></a-light>
-<a-light type="point" intensity="0.3" position="-16 9 12" distance="25" color="#fff5e0"></a-light>
-<a-light type="point" intensity="0.3" position="0 9 12" distance="25" color="#fff5e0"></a-light>
-<a-light type="point" intensity="0.3" position="16 9 12" distance="25" color="#fff5e0"></a-light>
-
-<!-- Chandelier fixtures -->
-<a-entity id="chandeliers">
-  <a-cylinder position="-16 9.5 -12" radius="0.6" height="0.08" color="#2a2015" material="metalness:0.7"></a-cylinder>
-  <a-cylinder position="0 9.5 -12" radius="0.6" height="0.08" color="#2a2015" material="metalness:0.7"></a-cylinder>
-  <a-cylinder position="16 9.5 -12" radius="0.6" height="0.08" color="#2a2015" material="metalness:0.7"></a-cylinder>
-  <a-cylinder position="-16 9.5 0" radius="0.6" height="0.08" color="#2a2015" material="metalness:0.7"></a-cylinder>
-  <a-cylinder position="0 9.5 0" radius="0.8" height="0.1" color="#2a2015" material="metalness:0.7"></a-cylinder>
-  <a-cylinder position="16 9.5 0" radius="0.6" height="0.08" color="#2a2015" material="metalness:0.7"></a-cylinder>
-  <a-cylinder position="-16 9.5 12" radius="0.6" height="0.08" color="#2a2015" material="metalness:0.7"></a-cylinder>
-  <a-cylinder position="0 9.5 12" radius="0.6" height="0.08" color="#2a2015" material="metalness:0.7"></a-cylinder>
-  <a-cylinder position="16 9.5 12" radius="0.6" height="0.08" color="#2a2015" material="metalness:0.7"></a-cylinder>
-</a-entity>
-
-<!-- ARCHITECTURE -->
-
-<!-- FLOOR - dark wood -->
-<a-plane rotation="-90 0 0" position="0 0 0" width="55" height="55" color="#12100a" material="roughness:0.15;metalness:0.5"></a-plane>
-<!-- Gold floor inlays -->
-<a-plane rotation="-90 0 0" position="-5.5 0.005 0" width="0.03" height="55" color="#c8a44e"></a-plane>
-<a-plane rotation="-90 0 0" position="5.5 0.005 0" width="0.03" height="55" color="#c8a44e"></a-plane>
-<a-plane rotation="-90 0 0" position="-16.5 0.005 0" width="0.03" height="55" color="#c8a44e"></a-plane>
-<a-plane rotation="-90 0 0" position="16.5 0.005 0" width="0.03" height="55" color="#c8a44e"></a-plane>
-
-<!-- CEILING -->
-<a-plane rotation="90 0 0" position="0 10 0" width="55" height="55" color="#0e0c08" material="roughness:0.7"></a-plane>
-
-<!-- WALLS (dark wood paneling) -->
-<a-box position="0 5 -20" width="55" height="10" depth="0.5" color="#14120c" material="roughness:0.5"></a-box>
-<a-box position="0 5 28" width="55" height="10" depth="0.5" color="#14120c" material="roughness:0.5"></a-box>
-<a-box position="-27.5 5 4" width="0.5" height="10" depth="55" color="#14120c" material="roughness:0.5"></a-box>
-<a-box position="27.5 5 4" width="0.5" height="10" depth="55" color="#14120c" material="roughness:0.5"></a-box>
-
-<!-- Wall wainscoting trim -->
-<a-box position="0 1.2 -19.7" width="55" height="0.04" depth="0.02" color="#c8a44e" material="metalness:0.85"></a-box>
-<a-box position="0 1.2 27.7" width="55" height="0.04" depth="0.02" color="#c8a44e" material="metalness:0.85"></a-box>
-
-<!-- COLUMNS -->
-<a-cylinder position="-24 5 -17" radius="0.55" height="10" color="#1a1812" material="roughness:0.25;metalness:0.4"></a-cylinder>
-<a-cylinder position="24 5 -17" radius="0.55" height="10" color="#1a1812" material="roughness:0.25;metalness:0.4"></a-cylinder>
-<a-cylinder position="-24 5 0" radius="0.55" height="10" color="#1a1812" material="roughness:0.25;metalness:0.4"></a-cylinder>
-<a-cylinder position="24 5 0" radius="0.55" height="10" color="#1a1812" material="roughness:0.25;metalness:0.4"></a-cylinder>
-<a-cylinder position="-24 5 17" radius="0.55" height="10" color="#1a1812" material="roughness:0.25;metalness:0.4"></a-cylinder>
-<a-cylinder position="24 5 17" radius="0.55" height="10" color="#1a1812" material="roughness:0.25;metalness:0.4"></a-cylinder>
-
-<!-- Column brass capitals -->
-<a-torus position="-24 9.8 -17" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="24 9.8 -17" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="-24 9.8 0" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="24 9.8 0" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="-24 9.8 17" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="24 9.8 17" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-
-<!-- Column brass bases -->
-<a-torus position="-24 0.3 -17" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="24 0.3 -17" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="-24 0.3 0" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="24 0.3 0" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="-24 0.3 17" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-<a-torus position="24 0.3 17" radius="0.6" radius-tubular="0.04" rotation="90 0 0" color="#c8a44e" material="metalness:0.9"></a-torus>
-
-<!-- ENTRANCE SIGN -->
-<a-entity position="0 7.5 27">
-  <a-plane width="18" height="2.8" color="#0e0c08" material="roughness:0.3"></a-plane>
-  <a-plane width="18.2" height="3" color="#c8a44e" position="0 0 -0.02" material="metalness:0.8"></a-plane>
-  <a-text value="MUSEO DE AUTOMÓVILES ANTIGUOS" align="center" position="0 0.5 0.02" width="14" color="#c8a44e" font="mozillavr"></a-text>
-  <a-text value="Del Benz Patent-Motorwagen 1886 al Mercedes 540K 1936" align="center" position="0 -0.1 0.02" width="11" color="#e0d8c8"></a-text>
-  <a-text value="50 Años de Historia del Automóvil  ·  12 Joyas Reales" align="center" position="0 -0.6 0.02" width="9" color="#998866"></a-text>
-  <a-text value="▸ Haz click en un coche para ver su ficha técnica ◂" align="center" position="0 -1.0 0.02" width="7.5" color="#c8a44e"></a-text>
-</a-entity>
-
-</a-scene>
 </body>
 </html>
